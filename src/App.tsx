@@ -203,7 +203,9 @@ const Navbar = ({
 
 const Hero = ({ info }: { info: SchoolInfo | null }) => {
   const [currentImage, setCurrentImage] = useState(0);
-  const images = info?.heroImages?.length ? info.heroImages : [
+  const images = info?.heroImages?.filter(img => img.trim() !== '').length 
+    ? info.heroImages.filter(img => img.trim() !== '') 
+    : [
     "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=2000",
     "https://images.unsplash.com/photo-1541339907198-e08756ebafe3?auto=format&fit=crop&q=80&w=2000",
     "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=2000"
@@ -1132,9 +1134,10 @@ const AdminDashboard = ({
                               results[idx].subject = e.target.value;
                               setNewStudent({...newStudent, results});
                             }} />
-                            <Input type="number" placeholder="Score" value={res.score} onChange={e => {
+                            <Input type="number" placeholder="Score" value={isNaN(res.score) ? '' : res.score} onChange={e => {
                               const results = [...(newStudent.results || [])];
-                              results[idx].score = parseInt(e.target.value);
+                              const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                              results[idx].score = isNaN(val) ? 0 : val;
                               setNewStudent({...newStudent, results});
                             }} />
                             <Input placeholder="Term" value={res.term} onChange={e => {
@@ -1142,9 +1145,10 @@ const AdminDashboard = ({
                               results[idx].term = e.target.value;
                               setNewStudent({...newStudent, results});
                             }} />
-                            <Input type="number" placeholder="Total" value={res.total} onChange={e => {
+                            <Input type="number" placeholder="Total" value={isNaN(res.total) ? '' : res.total} onChange={e => {
                               const results = [...(newStudent.results || [])];
-                              results[idx].total = parseInt(e.target.value);
+                              const val = e.target.value === '' ? 100 : parseInt(e.target.value);
+                              results[idx].total = isNaN(val) ? 100 : val;
                               setNewStudent({...newStudent, results});
                             }} />
                             <button 
