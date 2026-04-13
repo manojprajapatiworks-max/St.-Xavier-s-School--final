@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { handleFirestoreError, OperationType } from './firebase-utils';
-import { SchoolInfo, Announcement, Student, ClassWork, SchoolDocument } from '../types';
+import { SchoolInfo, Announcement, Student, ClassWork, SchoolDocument, Teacher } from '../types';
 
 const SCHOOL_INFO_PATH = 'school/info';
 
@@ -88,9 +88,21 @@ export const studentService = {
       return [];
     }
   },
-  async upsert(student: Student) {
+  subscribeAll(callback: (students: Student[]) => void) {
+    return onSnapshot(collection(db, 'students'), (snap) => {
+      callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as Student)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'students');
+    });
+  },
+  async upsert(student: Student, editorEmail?: string) {
     try {
-      await setDoc(doc(db, 'students', student.portalCode), student);
+      const data = {
+        ...student,
+        lastEditedBy: editorEmail || 'system',
+        lastEditedAt: new Date().toISOString()
+      };
+      await setDoc(doc(db, 'students', student.portalCode), data);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'students');
     }
@@ -113,9 +125,12 @@ export const classWorkService = {
       handleFirestoreError(error, OperationType.LIST, 'classwork');
     });
   },
-  async add(work: Omit<ClassWork, 'id'>) {
+  async add(work: Omit<ClassWork, 'id'>, editorName?: string) {
     try {
-      await addDoc(collection(db, 'classwork'), work);
+      await addDoc(collection(db, 'classwork'), {
+        ...work,
+        lastEditedBy: editorName || 'system'
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'classwork');
     }
@@ -150,6 +165,45 @@ export const documentService = {
       await deleteDoc(doc(db, 'documents', id));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'documents');
+    }
+  }
+};
+
+export const teacherService = {
+  subscribe(callback: (teachers: Teacher[]) => void) {
+    return onSnapshot(collection(db, 'teachers'), (snap) => {
+      callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as Teacher)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'teachers');
+    });
+  },
+  async add(teacher: Omit<Teacher, 'id'>) {
+    try {
+      if (!teacher.email) throw new Error("Email is required");
+      await setDoc(doc(db, 'teachers', teacher.email), teacher);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'teachers');
+    }
+  },
+  async login(email: string, password: string): Promise<Teacher | null> {
+    try {
+      const snap = await getDoc(doc(db, 'teachers', email));
+      if (!snap.exists()) return null;
+      const data = snap.data() as Teacher;
+      if (data.password === password) {
+        return { id: snap.id, ...data };
+      }
+      return null;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, `teachers/${email}`);
+      return null;
+    }
+  },
+  async delete(id: string) {
+    try {
+      await deleteDoc(doc(db, 'teachers', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'teachers');
     }
   }
 };

@@ -20,7 +20,18 @@ import {
   LogOut,
   FileText,
   TrendingUp,
-  User
+  User,
+  Image as ImageIcon,
+  Settings,
+  UserPlus,
+  CheckCircle2,
+  AlertCircle,
+  ChevronLeft,
+  MapPin,
+  Mail,
+  Phone,
+  Info,
+  Building2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from './firebase';
@@ -30,7 +41,8 @@ import {
   announcementService, 
   studentService, 
   classWorkService, 
-  documentService 
+  documentService,
+  teacherService
 } from './lib/services';
 import { 
   SchoolInfo, 
@@ -38,7 +50,10 @@ import {
   Student, 
   ClassWork, 
   SchoolDocument,
-  TestResult
+  TestResult,
+  Teacher,
+  FacultyMember,
+  Facility
 } from './types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -181,40 +196,76 @@ const Navbar = ({
 };
 
 const Hero = ({ info }: { info: SchoolInfo | null }) => {
+  const [currentImage, setCurrentImage] = useState(0);
+  const images = info?.heroImages?.length ? info.heroImages : [
+    "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=2000",
+    "https://images.unsplash.com/photo-1541339907198-e08756ebafe3?auto=format&fit=crop&q=80&w=2000",
+    "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=2000"
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % images.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [images.length]);
+
   return (
-    <div className="relative h-[600px] overflow-hidden bg-gray-900">
-      <img
-        src={info?.heroImageUrl || "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=2000"}
-        className="absolute inset-0 w-full h-full object-cover opacity-60"
-        alt="School Hero"
-        referrerPolicy="no-referrer"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent" />
+    <div className="relative h-[700px] overflow-hidden bg-gray-900">
+      <AnimatePresence mode="wait">
+        <motion.img
+          key={currentImage}
+          src={images[currentImage]}
+          initial={{ opacity: 0, scale: 1.1 }}
+          animate={{ opacity: 0.6, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.5 }}
+          className="absolute inset-0 w-full h-full object-cover"
+          alt="School Hero"
+          referrerPolicy="no-referrer"
+        />
+      </AnimatePresence>
+      
+      <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/40 to-transparent" />
+      
       <div className="relative max-w-7xl mx-auto px-4 h-full flex flex-col justify-center">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          className="max-w-2xl"
+          className="max-w-3xl"
         >
-          <Badge className="mb-4 bg-blue-600/20 text-blue-400 border-blue-600/30 backdrop-blur-sm">
-            Welcome to Excellence
+          <Badge className="mb-6 bg-blue-600 text-white border-none px-4 py-1 text-sm font-semibold tracking-wide uppercase">
+            Excellence in Education
           </Badge>
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight leading-tight">
+          <h1 className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter leading-[0.9] uppercase">
             {info?.heroTitle || "Empowering Minds, Shaping Futures"}
           </h1>
-          <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+          <p className="text-xl md:text-2xl text-gray-200 mb-10 leading-relaxed font-medium max-w-xl">
             {info?.heroSubtitle || "Join St. Xavier's School, where we nurture creativity, character, and academic excellence in every student."}
           </p>
-          <div className="flex gap-4">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg px-8">
+          <div className="flex flex-wrap gap-6">
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-10 h-14 text-lg font-bold shadow-2xl shadow-blue-600/20 transition-all hover:scale-105">
               Apply Now
             </Button>
-            <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 text-lg px-8">
+            <Button size="lg" variant="outline" className="text-white border-white/40 hover:bg-white/10 rounded-full px-10 h-14 text-lg font-bold backdrop-blur-sm transition-all hover:scale-105">
               Virtual Tour
             </Button>
           </div>
         </motion.div>
+      </div>
+
+      {/* Slider Indicators */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+        {images.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => setCurrentImage(idx)}
+            className={`h-1.5 transition-all rounded-full ${
+              currentImage === idx ? 'w-12 bg-blue-600' : 'w-3 bg-white/30 hover:bg-white/50'
+            }`}
+          />
+        ))}
       </div>
     </div>
   );
@@ -613,29 +664,105 @@ const DocumentsSection = ({ documents }: { documents: SchoolDocument[] }) => {
   );
 };
 
+const ConfirmDialog = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title, 
+  message 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onConfirm: () => void; 
+  title: string; 
+  message: string; 
+}) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl"
+      >
+        <div className="flex items-center gap-4 mb-6 text-red-600">
+          <AlertCircle className="w-8 h-8" />
+          <h3 className="text-2xl font-bold">{title}</h3>
+        </div>
+        <p className="text-gray-600 mb-8 leading-relaxed">{message}</p>
+        <div className="flex gap-4">
+          <Button variant="outline" onClick={onClose} className="flex-1 rounded-xl h-12">Cancel</Button>
+          <Button variant="destructive" onClick={() => { onConfirm(); onClose(); }} className="flex-1 rounded-xl h-12">Delete</Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 const AdminDashboard = ({ 
   info, 
   announcements, 
   documents, 
   students,
-  classWork
+  classWork,
+  teachers,
+  currentUser
 }: { 
   info: SchoolInfo | null;
   announcements: Announcement[];
   documents: SchoolDocument[];
   students: Student[];
   classWork: ClassWork[];
+  teachers: Teacher[];
+  currentUser: { name: string; role: string; privileges?: Teacher['privileges'] };
 }) => {
   const [editingInfo, setEditingInfo] = useState<SchoolInfo | null>(info);
   const [newAnn, setNewAnn] = useState({ title: '', content: '', priority: 'medium' as const });
   const [newDoc, setNewDoc] = useState({ title: '', url: '', type: 'profarma' as const });
   const [newStudent, setNewStudent] = useState<Partial<Student>>({ name: '', portalCode: '', class: '', results: [] });
   const [newWork, setNewWork] = useState({ className: '', subject: '', topic: '', description: '' });
+  const [newTeacher, setNewTeacher] = useState<Partial<Teacher>>({ 
+    name: '', 
+    email: '', 
+    subject: '', 
+    password: '',
+    privileges: { results: true, classwork: true, students: false }
+  });
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  
+  const [confirmDelete, setConfirmDelete] = useState<{ type: string; id: string; title: string } | null>(null);
+
+  const canManageInfo = currentUser.role === 'admin';
+  const canManageAnnouncements = currentUser.role === 'admin';
+  const canManageTeachers = currentUser.role === 'admin';
+  const canManageStudents = currentUser.role === 'admin' || currentUser.privileges?.students;
+  const canManageResults = currentUser.role === 'admin' || currentUser.privileges?.results;
+  const canManageClassWork = currentUser.role === 'admin' || currentUser.privileges?.classwork;
+  const canManageDocuments = currentUser.role === 'admin';
+
+  useEffect(() => {
+    if (info) setEditingInfo(info);
+  }, [info]);
 
   const handleUpdateInfo = async () => {
     if (editingInfo) {
       await schoolService.updateInfo(editingInfo);
       toast.success("School info updated successfully!");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    const { type, id } = confirmDelete;
+    try {
+      if (type === 'announcement') await announcementService.delete(id);
+      if (type === 'document') await documentService.delete(id);
+      if (type === 'student') await studentService.delete(id);
+      if (type === 'classwork') await classWorkService.delete(id);
+      if (type === 'teacher') await teacherService.delete(id);
+      toast.success("Deleted successfully!");
+    } catch (err) {
+      toast.error("Error deleting item.");
     }
   };
 
@@ -656,17 +783,18 @@ const AdminDashboard = ({
       await studentService.upsert({
         ...newStudent,
         results: newStudent.results || [],
-        attendance: 100,
-        rollNumber: '0',
-        parentName: '',
-      } as Student);
+        attendance: newStudent.attendance || 100,
+        rollNumber: newStudent.rollNumber || '0',
+        parentName: newStudent.parentName || '',
+      } as Student, currentUser.name);
       setNewStudent({ name: '', portalCode: '', class: '', results: [] });
-      toast.success("Student added!");
+      setSelectedStudent(null);
+      toast.success("Student updated!");
     }
   };
 
   const handleAddClassWork = async () => {
-    await classWorkService.add({ ...newWork, date: new Date().toISOString() });
+    await classWorkService.add({ ...newWork, date: new Date().toISOString() }, currentUser.name);
     setNewWork({ className: '', subject: '', topic: '', description: '' });
     toast.success("Class work added!");
   };
@@ -675,73 +803,221 @@ const AdminDashboard = ({
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4">
         <div className="mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Control Panel</h1>
-          <p className="text-gray-600">Manage school content, students, and portal data.</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            {currentUser.role === 'admin' ? 'Admin Control Panel' : 'Teacher Dashboard'}
+          </h1>
+          <p className="text-gray-600">Welcome back, {currentUser.name}. Manage school data and portal content.</p>
         </div>
 
-        <Tabs defaultValue="info" className="space-y-8">
+        <Tabs defaultValue={canManageInfo ? "info" : canManageTeachers ? "teachers" : "students"} className="space-y-8">
           <TabsList className="bg-white p-1 rounded-2xl shadow-sm overflow-x-auto flex-nowrap">
-            <TabsTrigger value="info" className="rounded-xl px-6">School Info</TabsTrigger>
-            <TabsTrigger value="announcements" className="rounded-xl px-6">Announcements</TabsTrigger>
-            <TabsTrigger value="students" className="rounded-xl px-6">Students</TabsTrigger>
-            <TabsTrigger value="classwork" className="rounded-xl px-6">Class Work</TabsTrigger>
-            <TabsTrigger value="documents" className="rounded-xl px-6">Documents</TabsTrigger>
+            {canManageInfo && <TabsTrigger value="info" className="rounded-xl px-6">School Info</TabsTrigger>}
+            {canManageAnnouncements && <TabsTrigger value="announcements" className="rounded-xl px-6">Announcements</TabsTrigger>}
+            {canManageTeachers && <TabsTrigger value="teachers" className="rounded-xl px-6">Teachers</TabsTrigger>}
+            {canManageStudents && <TabsTrigger value="students" className="rounded-xl px-6">Students</TabsTrigger>}
+            {canManageClassWork && <TabsTrigger value="classwork" className="rounded-xl px-6">Class Work</TabsTrigger>}
+            {canManageDocuments && <TabsTrigger value="documents" className="rounded-xl px-6">Documents</TabsTrigger>}
           </TabsList>
 
           {/* School Info Tab */}
-          <TabsContent value="info">
-            <Card className="rounded-3xl border-none shadow-sm">
-              <CardHeader>
-                <CardTitle>General Settings</CardTitle>
-                <CardDescription>Update the school's public profile and hero section.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">School Name</label>
-                    <Input 
-                      value={editingInfo?.name || ''} 
-                      onChange={e => setEditingInfo(prev => prev ? {...prev, name: e.target.value} : null)}
-                    />
+          {canManageInfo && (
+            <TabsContent value="info">
+              {/* ... existing info content ... */}
+            <div className="space-y-8">
+              <Card className="rounded-3xl border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5" /> General Settings</CardTitle>
+                  <CardDescription>Update the school's public profile and hero section.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">School Name</label>
+                      <Input 
+                        value={editingInfo?.name || ''} 
+                        onChange={e => setEditingInfo(prev => prev ? {...prev, name: e.target.value} : null)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Logo URL</label>
+                      <Input 
+                        value={editingInfo?.logoUrl || ''} 
+                        onChange={e => setEditingInfo(prev => prev ? {...prev, logoUrl: e.target.value} : null)}
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-sm font-medium">Hero Title</label>
+                      <Input 
+                        value={editingInfo?.heroTitle || ''} 
+                        onChange={e => setEditingInfo(prev => prev ? {...prev, heroTitle: e.target.value} : null)}
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-sm font-medium">Hero Subtitle</label>
+                      <Input 
+                        value={editingInfo?.heroSubtitle || ''} 
+                        onChange={e => setEditingInfo(prev => prev ? {...prev, heroSubtitle: e.target.value} : null)}
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-sm font-medium">Hero Images (One per line)</label>
+                      <textarea 
+                        className="w-full min-h-[100px] p-3 rounded-xl border border-gray-200 text-sm"
+                        value={editingInfo?.heroImages?.join('\n') || ''}
+                        onChange={e => setEditingInfo(prev => prev ? {...prev, heroImages: e.target.value.split('\n').filter(s => s.trim())} : null)}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Logo URL</label>
-                    <Input 
-                      value={editingInfo?.logoUrl || ''} 
-                      onChange={e => setEditingInfo(prev => prev ? {...prev, logoUrl: e.target.value} : null)}
-                    />
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-3xl border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Users className="w-5 h-5" /> Faculty Management</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    {editingInfo?.faculty?.map((f, idx) => (
+                      <div key={f.id} className="grid md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-2xl relative group">
+                        <Input placeholder="Name" value={f.name} onChange={e => {
+                          const faculty = [...(editingInfo.faculty || [])];
+                          faculty[idx].name = e.target.value;
+                          setEditingInfo({...editingInfo, faculty});
+                        }} />
+                        <Input placeholder="Role" value={f.role} onChange={e => {
+                          const faculty = [...(editingInfo.faculty || [])];
+                          faculty[idx].role = e.target.value;
+                          setEditingInfo({...editingInfo, faculty});
+                        }} />
+                        <Input placeholder="Image URL" value={f.imageUrl} onChange={e => {
+                          const faculty = [...(editingInfo.faculty || [])];
+                          faculty[idx].imageUrl = e.target.value;
+                          setEditingInfo({...editingInfo, faculty});
+                        }} />
+                        <button 
+                          onClick={() => {
+                            const faculty = editingInfo.faculty?.filter((_, i) => i !== idx);
+                            setEditingInfo({...editingInfo, faculty});
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <Button variant="outline" className="w-full" onClick={() => {
+                      setEditingInfo(prev => prev ? {
+                        ...prev, 
+                        faculty: [...(prev.faculty || []), { id: Math.random().toString(36).substr(2, 9), name: '', role: '', imageUrl: '' }]
+                      } : null);
+                    }}>
+                      <Plus className="w-4 h-4 mr-2" /> Add Faculty Member
+                    </Button>
                   </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-medium">Hero Title</label>
-                    <Input 
-                      value={editingInfo?.heroTitle || ''} 
-                      onChange={e => setEditingInfo(prev => prev ? {...prev, heroTitle: e.target.value} : null)}
-                    />
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-3xl border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Building2 className="w-5 h-5" /> Facilities Management</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    {editingInfo?.facilities?.map((f, idx) => (
+                      <div key={f.id} className="grid md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-2xl relative group">
+                        <Input placeholder="Title" value={f.title} onChange={e => {
+                          const facilities = [...(editingInfo.facilities || [])];
+                          facilities[idx].title = e.target.value;
+                          setEditingInfo({...editingInfo, facilities});
+                        }} />
+                        <Input placeholder="Image URL" value={f.imageUrl} onChange={e => {
+                          const facilities = [...(editingInfo.facilities || [])];
+                          facilities[idx].imageUrl = e.target.value;
+                          setEditingInfo({...editingInfo, facilities});
+                        }} />
+                        <textarea 
+                          className="w-full md:col-span-2 p-3 rounded-xl border border-gray-200 text-sm"
+                          placeholder="Description"
+                          value={f.description}
+                          onChange={e => {
+                            const facilities = [...(editingInfo.facilities || [])];
+                            facilities[idx].description = e.target.value;
+                            setEditingInfo({...editingInfo, facilities});
+                          }}
+                        />
+                        <button 
+                          onClick={() => {
+                            const facilities = editingInfo.facilities?.filter((_, i) => i !== idx);
+                            setEditingInfo({...editingInfo, facilities});
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <Button variant="outline" className="w-full" onClick={() => {
+                      setEditingInfo(prev => prev ? {
+                        ...prev, 
+                        facilities: [...(prev.facilities || []), { id: Math.random().toString(36).substr(2, 9), title: '', description: '', imageUrl: '' }]
+                      } : null);
+                    }}>
+                      <Plus className="w-4 h-4 mr-2" /> Add Facility
+                    </Button>
                   </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-medium">Hero Subtitle</label>
-                    <Input 
-                      value={editingInfo?.heroSubtitle || ''} 
-                      onChange={e => setEditingInfo(prev => prev ? {...prev, heroSubtitle: e.target.value} : null)}
-                    />
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-3xl border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><MapPin className="w-5 h-5" /> Footer Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Address</label>
+                      <Input 
+                        value={editingInfo?.footer?.address || ''} 
+                        onChange={e => setEditingInfo(prev => prev ? {...prev, footer: {...prev.footer, address: e.target.value}} : null)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Email</label>
+                      <Input 
+                        value={editingInfo?.footer?.email || ''} 
+                        onChange={e => setEditingInfo(prev => prev ? {...prev, footer: {...prev.footer, email: e.target.value}} : null)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Phone</label>
+                      <Input 
+                        value={editingInfo?.footer?.phone || ''} 
+                        onChange={e => setEditingInfo(prev => prev ? {...prev, footer: {...prev.footer, phone: e.target.value}} : null)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">About Text</label>
+                      <Input 
+                        value={editingInfo?.footer?.about || ''} 
+                        onChange={e => setEditingInfo(prev => prev ? {...prev, footer: {...prev.footer, about: e.target.value}} : null)}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-medium">Hero Image URL</label>
-                    <Input 
-                      value={editingInfo?.heroImageUrl || ''} 
-                      onChange={e => setEditingInfo(prev => prev ? {...prev, heroImageUrl: e.target.value} : null)}
-                    />
-                  </div>
-                </div>
-                <Button onClick={handleUpdateInfo} className="bg-blue-600">
-                  <Save className="w-4 h-4 mr-2" /> Save Changes
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end">
+                <Button onClick={handleUpdateInfo} className="bg-blue-600 rounded-full px-8 h-12 shadow-lg shadow-blue-600/20">
+                  <Save className="w-4 h-4 mr-2" /> Save All Settings
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
+          )}
 
           {/* Announcements Tab */}
-          <TabsContent value="announcements">
+          {canManageAnnouncements && (
+            <TabsContent value="announcements">
             <div className="grid lg:grid-cols-3 gap-8">
               <Card className="rounded-3xl border-none shadow-sm h-fit">
                 <CardHeader><CardTitle>Add Announcement</CardTitle></CardHeader>
@@ -779,7 +1055,7 @@ const AdminDashboard = ({
                         <h4 className="font-bold">{ann.title}</h4>
                         <p className="text-xs text-gray-400">{new Date(ann.date).toLocaleDateString()}</p>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => announcementService.delete(ann.id)} className="text-red-500">
+                      <Button variant="ghost" size="sm" onClick={() => setConfirmDelete({ type: 'announcement', id: ann.id, title: ann.title })} className="text-red-500">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </CardContent>
@@ -788,116 +1064,354 @@ const AdminDashboard = ({
               </div>
             </div>
           </TabsContent>
+          )}
 
           {/* Students Tab */}
-          <TabsContent value="students">
-            <div className="grid lg:grid-cols-3 gap-8">
-              <Card className="rounded-3xl border-none shadow-sm h-fit">
-                <CardHeader><CardTitle>Add Student</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <Input 
-                    placeholder="Student Name" 
-                    value={newStudent.name} 
-                    onChange={e => setNewStudent({...newStudent, name: e.target.value})}
-                  />
-                  <Input 
-                    placeholder="Portal Code (Unique)" 
-                    value={newStudent.portalCode} 
-                    onChange={e => setNewStudent({...newStudent, portalCode: e.target.value})}
-                  />
-                  <Input 
-                    placeholder="Class" 
-                    value={newStudent.class} 
-                    onChange={e => setNewStudent({...newStudent, class: e.target.value})}
-                  />
-                  <Button onClick={handleAddStudent} className="w-full bg-blue-600">
-                    <Plus className="w-4 h-4 mr-2" /> Add Student
-                  </Button>
-                </CardContent>
-              </Card>
-              <div className="lg:col-span-2">
-                <Card className="rounded-3xl border-none shadow-sm overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Class</TableHead>
-                        <TableHead>Code</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {students.map(s => (
-                        <TableRow key={s.id}>
-                          <TableCell className="font-medium">{s.name}</TableCell>
-                          <TableCell>{s.class}</TableCell>
-                          <TableCell><Badge variant="outline">{s.portalCode}</Badge></TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" onClick={() => studentService.delete(s.portalCode)} className="text-red-500">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+          {canManageStudents && (
+            <TabsContent value="students">
+              <div className="grid lg:grid-cols-3 gap-8">
+                <Card className="rounded-3xl border-none shadow-sm h-fit">
+                  <CardHeader><CardTitle>{selectedStudent ? 'Edit Student' : 'Add Student'}</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    <Input 
+                      placeholder="Student Name" 
+                      value={newStudent.name || ''} 
+                      onChange={e => setNewStudent({...newStudent, name: e.target.value})}
+                    />
+                    <Input 
+                      placeholder="Portal Code (Unique)" 
+                      value={newStudent.portalCode || ''} 
+                      onChange={e => setNewStudent({...newStudent, portalCode: e.target.value})}
+                      disabled={!!selectedStudent}
+                    />
+                    <Input 
+                      placeholder="Class" 
+                      value={newStudent.class || ''} 
+                      onChange={e => setNewStudent({...newStudent, class: e.target.value})}
+                    />
+                    <Input 
+                      placeholder="Roll Number" 
+                      value={newStudent.rollNumber || ''} 
+                      onChange={e => setNewStudent({...newStudent, rollNumber: e.target.value})}
+                    />
+                    <Input 
+                      placeholder="Parent Name" 
+                      value={newStudent.parentName || ''} 
+                      onChange={e => setNewStudent({...newStudent, parentName: e.target.value})}
+                    />
+                    <Input 
+                      placeholder="Student Image URL" 
+                      value={newStudent.imageUrl || ''} 
+                      onChange={e => setNewStudent({...newStudent, imageUrl: e.target.value})}
+                    />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Attendance %</label>
+                      <Input 
+                        type="number"
+                        value={newStudent.attendance || 0} 
+                        onChange={e => setNewStudent({...newStudent, attendance: parseInt(e.target.value)})}
+                      />
+                    </div>
+                    
+                    {canManageResults && (
+                      <div className="pt-4 border-t space-y-4">
+                        <h4 className="text-sm font-bold">Exam Results</h4>
+                        {newStudent.results?.map((res, idx) => (
+                          <div key={idx} className="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded-lg relative group">
+                            <Input placeholder="Subject" value={res.subject} onChange={e => {
+                              const results = [...(newStudent.results || [])];
+                              results[idx].subject = e.target.value;
+                              setNewStudent({...newStudent, results});
+                            }} />
+                            <Input type="number" placeholder="Score" value={res.score} onChange={e => {
+                              const results = [...(newStudent.results || [])];
+                              results[idx].score = parseInt(e.target.value);
+                              setNewStudent({...newStudent, results});
+                            }} />
+                            <Input placeholder="Term" value={res.term} onChange={e => {
+                              const results = [...(newStudent.results || [])];
+                              results[idx].term = e.target.value;
+                              setNewStudent({...newStudent, results});
+                            }} />
+                            <Input type="number" placeholder="Total" value={res.total} onChange={e => {
+                              const results = [...(newStudent.results || [])];
+                              results[idx].total = parseInt(e.target.value);
+                              setNewStudent({...newStudent, results});
+                            }} />
+                            <button 
+                              onClick={() => {
+                                const results = newStudent.results?.filter((_, i) => i !== idx);
+                                setNewStudent({...newStudent, results});
+                              }}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                        <Button variant="outline" size="sm" className="w-full" onClick={() => {
+                          setNewStudent({...newStudent, results: [...(newStudent.results || []), { subject: '', score: 0, total: 100, term: 'Final' }]});
+                        }}>
+                          <Plus className="w-4 h-4 mr-2" /> Add Result
+                        </Button>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      {selectedStudent && (
+                        <Button variant="outline" className="flex-1" onClick={() => {
+                          setSelectedStudent(null);
+                          setNewStudent({ name: '', portalCode: '', class: '', results: [] });
+                        }}>Cancel</Button>
+                      )}
+                      <Button onClick={handleAddStudent} className="flex-1 bg-blue-600">
+                        {selectedStudent ? <Save className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                        {selectedStudent ? 'Update' : 'Add'} Student
+                      </Button>
+                    </div>
+                  </CardContent>
                 </Card>
+
+                <div className="lg:col-span-2">
+                  <Card className="rounded-3xl border-none shadow-sm overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Student</TableHead>
+                          <TableHead>Class</TableHead>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Last Edited By</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {students.map(s => (
+                          <TableRow key={s.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600">
+                                  {s.imageUrl ? <img src={s.imageUrl} className="w-full h-full rounded-full object-cover" /> : s.name[0]}
+                                </div>
+                                <div>
+                                  <div className="font-medium">{s.name}</div>
+                                  <div className="text-xs text-gray-400">Roll: {s.rollNumber}</div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{s.class}</TableCell>
+                            <TableCell><Badge variant="outline">{s.portalCode}</Badge></TableCell>
+                            <TableCell>
+                              <div className="text-xs text-gray-500">
+                                {s.lastEditedBy || 'System'}
+                                {s.lastEditedAt && <div className="text-[10px] opacity-60">{new Date(s.lastEditedAt).toLocaleDateString()}</div>}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => {
+                                  setSelectedStudent(s);
+                                  setNewStudent(s);
+                                }}>
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => setConfirmDelete({ type: 'student', id: s.portalCode, title: s.name })} className="text-red-500">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Card>
+                </div>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
+          )}
+
+          {/* Teachers Tab */}
+          {canManageTeachers && (
+            <TabsContent value="teachers">
+              <div className="grid lg:grid-cols-3 gap-8">
+                <Card className="rounded-3xl border-none shadow-sm h-fit">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><UserPlus className="w-5 h-5" /> Add Teacher</CardTitle>
+                    <CardDescription>Teachers can manage student results and class work.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Input 
+                      placeholder="Teacher Name" 
+                      value={newTeacher.name} 
+                      onChange={e => setNewTeacher({...newTeacher, name: e.target.value})}
+                    />
+                    <Input 
+                      placeholder="Email Address" 
+                      value={newTeacher.email} 
+                      onChange={e => setNewTeacher({...newTeacher, email: e.target.value})}
+                    />
+                    <Input 
+                      placeholder="Password" 
+                      type="password"
+                      value={newTeacher.password} 
+                      onChange={e => setNewTeacher({...newTeacher, password: e.target.value})}
+                    />
+                    <Input 
+                      placeholder="Subject" 
+                      value={newTeacher.subject} 
+                      onChange={e => setNewTeacher({...newTeacher, subject: e.target.value})}
+                    />
+                    
+                    <div className="space-y-3 pt-4 border-t">
+                      <h4 className="text-sm font-bold">Privileges</h4>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={newTeacher.privileges?.results} 
+                            onChange={e => setNewTeacher({
+                              ...newTeacher, 
+                              privileges: { ...newTeacher.privileges!, results: e.target.checked }
+                            })}
+                          />
+                          Manage Exam Results
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={newTeacher.privileges?.classwork} 
+                            onChange={e => setNewTeacher({
+                              ...newTeacher, 
+                              privileges: { ...newTeacher.privileges!, classwork: e.target.checked }
+                            })}
+                          />
+                          Manage Class Work
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={newTeacher.privileges?.students} 
+                            onChange={e => setNewTeacher({
+                              ...newTeacher, 
+                              privileges: { ...newTeacher.privileges!, students: e.target.checked }
+                            })}
+                          />
+                          Manage Student Profiles
+                        </label>
+                      </div>
+                    </div>
+
+                    <Button onClick={async () => {
+                      if (!newTeacher.name || !newTeacher.email || !newTeacher.password) {
+                        toast.error("Please fill all fields");
+                        return;
+                      }
+                      try {
+                        await teacherService.add(newTeacher as Teacher);
+                        setNewTeacher({ 
+                          name: '', 
+                          email: '', 
+                          subject: '', 
+                          password: '',
+                          privileges: { results: true, classwork: true, students: false }
+                        });
+                        toast.success("Teacher added successfully!");
+                      } catch (err) {
+                        toast.error("Failed to add teacher. Please check your connection.");
+                        console.error(err);
+                      }
+                    }} className="w-full bg-blue-600">
+                      <Plus className="w-4 h-4 mr-2" /> Add Teacher
+                    </Button>
+                  </CardContent>
+                </Card>
+                <div className="lg:col-span-2 space-y-4">
+                  {teachers.map(t => (
+                    <Card key={t.id} className="rounded-2xl border-none shadow-sm">
+                      <CardContent className="p-4 flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                            <User className="text-blue-600 w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold">{t.name}</h4>
+                            <p className="text-xs text-gray-500">{t.email} • {t.subject}</p>
+                            <p className="text-[10px] text-blue-600 font-mono mt-1 bg-blue-50 px-2 py-0.5 rounded w-fit">Pass: {t.password}</p>
+                            <div className="flex gap-2 mt-1">
+                              {t.privileges?.results && <Badge variant="secondary" className="text-[10px]">Results</Badge>}
+                              {t.privileges?.classwork && <Badge variant="secondary" className="text-[10px]">Classwork</Badge>}
+                              {t.privileges?.students && <Badge variant="secondary" className="text-[10px]">Students</Badge>}
+                            </div>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => setConfirmDelete({ type: 'teacher', id: t.id, title: t.name })} className="text-red-500">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+          )}
 
           {/* Class Work Tab */}
-          <TabsContent value="classwork">
-            <div className="grid lg:grid-cols-3 gap-8">
-              <Card className="rounded-3xl border-none shadow-sm h-fit">
-                <CardHeader><CardTitle>Post Class Work</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <Input 
-                    placeholder="Class (e.g. 10-A)" 
-                    value={newWork.className} 
-                    onChange={e => setNewWork({...newWork, className: e.target.value})}
-                  />
-                  <Input 
-                    placeholder="Subject" 
-                    value={newWork.subject} 
-                    onChange={e => setNewWork({...newWork, subject: e.target.value})}
-                  />
-                  <Input 
-                    placeholder="Topic" 
-                    value={newWork.topic} 
-                    onChange={e => setNewWork({...newWork, topic: e.target.value})}
-                  />
-                  <textarea 
-                    className="w-full min-h-[100px] p-3 rounded-xl border border-gray-200 text-sm" 
-                    placeholder="Description"
-                    value={newWork.description}
-                    onChange={e => setNewWork({...newWork, description: e.target.value})}
-                  />
-                  <Button onClick={handleAddClassWork} className="w-full bg-blue-600">
-                    <Plus className="w-4 h-4 mr-2" /> Post Work
-                  </Button>
-                </CardContent>
-              </Card>
-              <div className="lg:col-span-2 space-y-4">
-                {classWork.map(cw => (
-                  <Card key={cw.id} className="rounded-2xl border-none shadow-sm">
-                    <CardContent className="p-4 flex justify-between items-center">
-                      <div>
-                        <h4 className="font-bold">{cw.subject} - {cw.className}</h4>
-                        <p className="text-sm text-gray-500">{cw.topic}</p>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => classWorkService.delete(cw.id)} className="text-red-500">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+          {canManageClassWork && (
+            <TabsContent value="classwork">
+              <div className="grid lg:grid-cols-3 gap-8">
+                <Card className="rounded-3xl border-none shadow-sm h-fit">
+                  <CardHeader><CardTitle>Post Class Work</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    <Input 
+                      placeholder="Class (e.g. 10-A)" 
+                      value={newWork.className} 
+                      onChange={e => setNewWork({...newWork, className: e.target.value})}
+                    />
+                    <Input 
+                      placeholder="Subject" 
+                      value={newWork.subject} 
+                      onChange={e => setNewWork({...newWork, subject: e.target.value})}
+                    />
+                    <Input 
+                      placeholder="Topic" 
+                      value={newWork.topic} 
+                      onChange={e => setNewWork({...newWork, topic: e.target.value})}
+                    />
+                    <textarea 
+                      className="w-full min-h-[100px] p-3 rounded-xl border border-gray-200 text-sm" 
+                      placeholder="Description"
+                      value={newWork.description}
+                      onChange={e => setNewWork({...newWork, description: e.target.value})}
+                    />
+                    <Button onClick={handleAddClassWork} className="w-full bg-blue-600">
+                      <Plus className="w-4 h-4 mr-2" /> Post Work
+                    </Button>
+                  </CardContent>
+                </Card>
+                <div className="lg:col-span-2 space-y-4">
+                  {classWork.map(cw => (
+                    <Card key={cw.id} className="rounded-2xl border-none shadow-sm">
+                      <CardContent className="p-4 flex justify-between items-center">
+                        <div>
+                          <h4 className="font-bold">{cw.subject} - {cw.className}</h4>
+                          <p className="text-sm text-gray-500">{cw.topic}</p>
+                          <div className="text-[10px] text-gray-400 mt-1">
+                            Added by: {cw.lastEditedBy || 'System'}
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => setConfirmDelete({ type: 'classwork', id: cw.id, title: cw.subject })} className="text-red-500">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
+          )}
 
           {/* Documents Tab */}
-          <TabsContent value="documents">
+          {canManageDocuments && (
+            <TabsContent value="documents">
             <div className="grid lg:grid-cols-3 gap-8">
               <Card className="rounded-3xl border-none shadow-sm h-fit">
                 <CardHeader><CardTitle>Upload Document</CardTitle></CardHeader>
@@ -935,7 +1449,7 @@ const AdminDashboard = ({
                         <h4 className="font-bold">{doc.title}</h4>
                         <Badge variant="secondary">{doc.type}</Badge>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => documentService.delete(doc.id)} className="text-red-500">
+                      <Button variant="ghost" size="sm" onClick={() => setConfirmDelete({ type: 'document', id: doc.id, title: doc.title })} className="text-red-500">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </CardContent>
@@ -944,51 +1458,151 @@ const AdminDashboard = ({
               </div>
             </div>
           </TabsContent>
+          )}
         </Tabs>
+        <ConfirmDialog 
+          isOpen={!!confirmDelete}
+          onClose={() => setConfirmDelete(null)}
+          onConfirm={handleDelete}
+          title="Confirm Deletion"
+          message={`Are you sure you want to delete "${confirmDelete?.title}"? This action cannot be undone.`}
+        />
       </div>
     </div>
   );
 };
 
-const Footer = () => {
+const Footer = ({ info }: { info: SchoolInfo | null }) => {
+  const footer = info?.footer;
   return (
-    <footer className="bg-gray-900 text-white py-20">
+    <footer className="bg-gray-900 text-white py-24">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="grid md:grid-cols-4 gap-12 mb-12">
+        <div className="grid md:grid-cols-4 gap-16 mb-16">
           <div className="col-span-2">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="bg-blue-600 p-2 rounded-xl">
-                <School className="text-white w-6 h-6" />
+            <div className="flex items-center gap-4 mb-8">
+              <div className="bg-blue-600 p-3 rounded-2xl">
+                <School className="text-white w-8 h-8" />
               </div>
-              <span className="text-2xl font-bold tracking-tight">St. Xavier's School</span>
+              <span className="text-3xl font-black tracking-tighter uppercase">{info?.name || "St. Xavier's School"}</span>
             </div>
-            <p className="text-gray-400 max-w-md leading-relaxed">
-              Dedicated to providing a holistic education that empowers students to become lifelong learners and responsible global citizens.
+            <p className="text-gray-400 max-w-md leading-relaxed text-lg">
+              {footer?.about || "Dedicated to providing a holistic education that empowers students to become lifelong learners and responsible global citizens."}
             </p>
           </div>
           <div>
-            <h4 className="font-bold mb-6">Quick Links</h4>
-            <ul className="space-y-4 text-gray-400 text-sm">
-              <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Admissions</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Academic Calendar</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
+            <h4 className="font-bold text-xl mb-8 flex items-center gap-2"><Info className="w-5 h-5 text-blue-500" /> Quick Links</h4>
+            <ul className="space-y-4 text-gray-400">
+              <li><a href="#" className="hover:text-white transition-colors flex items-center gap-2"><ChevronRight className="w-4 h-4" /> About Us</a></li>
+              <li><a href="#" className="hover:text-white transition-colors flex items-center gap-2"><ChevronRight className="w-4 h-4" /> Admissions</a></li>
+              <li><a href="#" className="hover:text-white transition-colors flex items-center gap-2"><ChevronRight className="w-4 h-4" /> Academic Calendar</a></li>
+              <li><a href="#" className="hover:text-white transition-colors flex items-center gap-2"><ChevronRight className="w-4 h-4" /> Contact Us</a></li>
             </ul>
           </div>
           <div>
-            <h4 className="font-bold mb-6">Contact</h4>
-            <ul className="space-y-4 text-gray-400 text-sm">
-              <li>123 Education Lane, Knowledge City</li>
-              <li>info@stxaviers.edu</li>
-              <li>+1 (555) 123-4567</li>
+            <h4 className="font-bold text-xl mb-8 flex items-center gap-2"><MapPin className="w-5 h-5 text-blue-500" /> Contact</h4>
+            <ul className="space-y-6 text-gray-400">
+              <li className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-blue-500 shrink-0" />
+                <span>{footer?.address || "123 Education Lane, Knowledge City"}</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-blue-500 shrink-0" />
+                <span>{footer?.email || "info@stxaviers.edu"}</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Phone className="w-5 h-5 text-blue-500 shrink-0" />
+                <span>{footer?.phone || "+1 (555) 123-4567"}</span>
+              </li>
             </ul>
           </div>
         </div>
-        <div className="pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
-          © {new Date().getFullYear()} St. Xavier's School. All rights reserved.
+        <div className="pt-12 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-sm">
+          <p>© {new Date().getFullYear()} {info?.name || "St. Xavier's School"}. All rights reserved.</p>
+          <div className="flex gap-8">
+            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+          </div>
         </div>
       </div>
     </footer>
+  );
+};
+
+const LoginView = ({ onTeacherLogin, onAdminLogin }: { onTeacherLogin: (t: Teacher) => void, onAdminLogin: () => void }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleTeacherSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const teacher = await teacherService.login(email, password);
+    setLoading(false);
+    if (teacher) {
+      onTeacherLogin(teacher);
+    } else {
+      toast.error("Invalid teacher credentials.");
+    }
+  };
+
+  return (
+    <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 px-4 py-12">
+      <Card className="w-full max-w-md rounded-3xl border-none shadow-xl overflow-hidden">
+        <div className="bg-blue-600 p-8 text-white text-center">
+          <School className="w-12 h-12 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold">School Portal Login</h2>
+          <p className="text-blue-100 mt-2">Access your dashboard</p>
+        </div>
+        <CardContent className="p-8">
+          <Tabs defaultValue="teacher" className="space-y-6">
+            <TabsList className="grid grid-cols-2 bg-gray-100 p-1 rounded-2xl">
+              <TabsTrigger value="teacher" className="rounded-xl">Teacher</TabsTrigger>
+              <TabsTrigger value="admin" className="rounded-xl">Admin</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="teacher">
+              <form onSubmit={handleTeacherSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Email Address</label>
+                  <Input 
+                    type="email" 
+                    placeholder="teacher@stxaviers.edu" 
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Password</label>
+                  <Input 
+                    type="password" 
+                    placeholder="••••••••" 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    className="rounded-xl"
+                  />
+                </div>
+                <Button type="submit" className="w-full bg-blue-600 rounded-xl h-12 font-bold" disabled={loading}>
+                  {loading ? "Logging in..." : "Login as Teacher"}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="admin">
+              <div className="text-center space-y-6 py-4">
+                <p className="text-gray-600">Admin access is restricted to authorized Google accounts.</p>
+                <Button onClick={onAdminLogin} className="w-full bg-white text-gray-900 border border-gray-200 hover:bg-gray-50 rounded-xl h-12 font-bold flex items-center justify-center gap-2">
+                  <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
+                  Login with Google
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
@@ -997,12 +1611,15 @@ const Footer = () => {
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [teacherUser, setTeacherUser] = useState<Teacher | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [documents, setDocuments] = useState<SchoolDocument[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [classWork, setClassWork] = useState<ClassWork[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [isTeacher, setIsTeacher] = useState(false);
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => {
@@ -1012,31 +1629,42 @@ export default function App() {
 
     const unsubInfo = schoolService.subscribeToInfo((info) => {
       setSchoolInfo(info);
-      // Initialize with defaults if empty
       if (!info && isAdmin) {
         schoolService.updateInfo({
           name: "St. Xavier's School",
           logoUrl: "https://cdn-icons-png.flaticon.com/512/2940/2940651.png",
           heroTitle: "Empowering Minds, Shaping Futures",
           heroSubtitle: "Join St. Xavier's School, where we nurture creativity, character, and academic excellence in every student.",
-          heroImageUrl: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=2000",
+          heroImages: [
+            "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=2000",
+            "https://images.unsplash.com/photo-1541339907198-e08756ebafe3?auto=format&fit=crop&q=80&w=2000"
+          ],
           faculty: [
-            { name: "Dr. Robert Wilson", role: "Principal", imageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400" },
-            { name: "Sarah Jenkins", role: "Head of Science", imageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=400" },
-            { name: "Michael Chen", role: "Math Coordinator", imageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400" },
-            { name: "Emily Davis", role: "Arts Director", imageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400" }
+            { id: '1', name: "Dr. Robert Wilson", role: "Principal", imageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400" },
+            { id: '2', name: "Sarah Jenkins", role: "Head of Science", imageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=400" }
           ],
           facilities: [
-            { title: "Modern Labs", description: "State-of-the-art science and computer laboratories.", imageUrl: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&q=80&w=800" },
-            { title: "Sports Complex", description: "Olympic-sized swimming pool and multi-purpose courts.", imageUrl: "https://images.unsplash.com/photo-1541339907198-e08756ebafe3?auto=format&fit=crop&q=80&w=800" },
-            { title: "Digital Library", description: "Access to thousands of e-books and research journals.", imageUrl: "https://images.unsplash.com/photo-1507733108721-c010ef58710b?auto=format&fit=crop&q=80&w=800" }
-          ]
+            { id: '1', title: "Modern Labs", description: "State-of-the-art science and computer laboratories.", imageUrl: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&q=80&w=800" }
+          ],
+          footer: {
+            address: "123 Education Lane, Knowledge City",
+            email: "info@stxaviers.edu",
+            phone: "+1 (555) 123-4567",
+            about: "Dedicated to providing a holistic education that empowers students to become lifelong learners and responsible global citizens."
+          }
         });
       }
     });
+
     const unsubAnn = announcementService.subscribe(setAnnouncements);
     const unsubDocs = documentService.subscribe(setDocuments);
     const unsubWork = classWorkService.subscribe(setClassWork);
+    const unsubTeachers = teacherService.subscribe((tList) => {
+      setTeachers(tList);
+      if (user) {
+        setIsTeacher(tList.some(t => t.email === user.email));
+      }
+    });
 
     return () => {
       unsubAuth();
@@ -1044,28 +1672,33 @@ export default function App() {
       unsubAnn();
       unsubDocs();
       unsubWork();
+      unsubTeachers();
     };
-  }, []);
+  }, [isAdmin, user]);
 
   useEffect(() => {
-    if (isAdmin) {
-      studentService.getAll().then(setStudents);
+    if (isAdmin || isTeacher) {
+      const unsub = studentService.subscribeAll(setStudents);
+      return unsub;
     }
-  }, [isAdmin]);
+  }, [isAdmin, isTeacher]);
 
   const handleLogin = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      toast.success("Logged in successfully!");
-    } catch (err) {
-      toast.error("Login failed.");
-    }
+    setActiveTab('login');
+  };
+
+  const handleTeacherLogin = (teacher: Teacher) => {
+    setTeacherUser(teacher);
+    setIsTeacher(true);
+    setActiveTab('admin');
+    toast.success(`Welcome, ${teacher.name}!`);
   };
 
   const handleLogout = async () => {
-    await signOut(auth);
+    if (user) await signOut(auth);
+    setTeacherUser(null);
     setIsAdmin(false);
+    setIsTeacher(false);
     setActiveTab('home');
     toast.success("Logged out.");
   };
@@ -1075,8 +1708,8 @@ export default function App() {
       <Navbar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
-        isAdmin={isAdmin} 
-        user={user}
+        isAdmin={isAdmin || isTeacher} 
+        user={user || (teacherUser ? ({ displayName: teacherUser.name, email: teacherUser.email } as any) : null)}
         onLogin={handleLogin}
         onLogout={handleLogout}
       />
@@ -1084,16 +1717,38 @@ export default function App() {
       <main className="flex-grow">
         <AnimatePresence mode="wait">
           {activeTab === 'home' && (
-            <motion.div
-              key="home"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
+            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <Hero info={schoolInfo} />
               <AnnouncementsSection announcements={announcements} />
               <FacultySection faculty={schoolInfo?.faculty || []} />
               <FacilitiesSection facilities={schoolInfo?.facilities || []} />
+            </motion.div>
+          )}
+
+          {activeTab === 'login' && (
+            <motion.div key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <LoginView 
+                onTeacherLogin={handleTeacherLogin} 
+                onAdminLogin={async () => {
+                  const provider = new GoogleAuthProvider();
+                  await signInWithPopup(auth, provider);
+                  setActiveTab('admin');
+                }} 
+              />
+            </motion.div>
+          )}
+
+          {activeTab === 'admin' && (isAdmin || isTeacher) && (
+            <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <AdminDashboard 
+                info={schoolInfo}
+                announcements={announcements}
+                documents={documents}
+                students={students}
+                classWork={classWork}
+                teachers={teachers}
+                currentUser={isAdmin ? { name: 'Admin', role: 'admin' } : { name: teacherUser?.name || 'Teacher', role: 'teacher', privileges: teacherUser?.privileges }}
+              />
             </motion.div>
           )}
 
@@ -1154,26 +1809,10 @@ export default function App() {
             </motion.div>
           )}
 
-          {activeTab === 'admin' && isAdmin && (
-            <motion.div
-              key="admin"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <AdminDashboard 
-                info={schoolInfo} 
-                announcements={announcements} 
-                documents={documents} 
-                students={students}
-                classWork={classWork}
-              />
-            </motion.div>
-          )}
         </AnimatePresence>
       </main>
 
-      <Footer />
+      <Footer info={schoolInfo} />
       <Toaster position="top-center" />
     </div>
   );

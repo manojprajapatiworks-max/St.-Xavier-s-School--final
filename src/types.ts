@@ -3,18 +3,28 @@ export interface SchoolInfo {
   logoUrl: string;
   heroTitle: string;
   heroSubtitle: string;
-  heroImageUrl: string;
+  heroImages: string[];
   faculty: FacultyMember[];
   facilities: Facility[];
+  footer: FooterInfo;
+}
+
+export interface FooterInfo {
+  address: string;
+  email: string;
+  phone: string;
+  about: string;
 }
 
 export interface FacultyMember {
+  id: string;
   name: string;
   role: string;
   imageUrl: string;
 }
 
 export interface Facility {
+  id: string;
   title: string;
   description: string;
   imageUrl: string;
@@ -31,12 +41,28 @@ export interface Announcement {
 export interface Student {
   id: string;
   name: string;
+  imageUrl?: string;
   portalCode: string;
   class: string;
   rollNumber: string;
   parentName: string;
   results: TestResult[];
   attendance: number;
+  lastEditedBy?: string;
+  lastEditedAt?: string;
+}
+
+export interface Teacher {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  subject: string;
+  privileges: {
+    results: boolean;
+    classwork: boolean;
+    students: boolean;
+  };
 }
 
 export interface TestResult {
@@ -53,6 +79,7 @@ export interface ClassWork {
   topic: string;
   description: string;
   date: string;
+  lastEditedBy?: string;
 }
 
 export interface SchoolDocument {
