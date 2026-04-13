@@ -133,7 +133,13 @@ const Navbar = ({
             ))}
             {user ? (
               <div className="flex items-center gap-4 pl-4 border-l border-gray-200">
-                <img src={user.photoURL || ''} className="w-8 h-8 rounded-full border border-gray-200" alt="profile" />
+                {user.photoURL ? (
+                  <img src={user.photoURL} className="w-8 h-8 rounded-full border border-gray-200" alt="profile" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold">
+                    {user.displayName?.[0] || user.email?.[0] || 'U'}
+                  </div>
+                )}
                 <Button variant="ghost" size="sm" onClick={onLogout}>
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
@@ -1108,8 +1114,11 @@ const AdminDashboard = ({
                       <label className="text-sm font-medium">Attendance %</label>
                       <Input 
                         type="number"
-                        value={newStudent.attendance || 0} 
-                        onChange={e => setNewStudent({...newStudent, attendance: parseInt(e.target.value)})}
+                        value={isNaN(newStudent.attendance as number) ? 0 : newStudent.attendance} 
+                        onChange={e => {
+                          const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                          setNewStudent({...newStudent, attendance: isNaN(val) ? 0 : val});
+                        }}
                       />
                     </div>
                     
@@ -1622,9 +1631,27 @@ export default function App() {
   const [isTeacher, setIsTeacher] = useState(false);
 
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, (u) => {
+    const unsubAuth = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      setIsAdmin(u?.email === "manojprajapatiworks@gmail.com");
+      if (u?.email === "manojprajapatiworks@gmail.com") {
+        setIsAdmin(true);
+        setIsTeacher(false);
+      } else {
+        setIsAdmin(false);
+        if (u?.email) {
+          const teacher = await teacherService.checkIsTeacher(u.email);
+          if (teacher) {
+            setIsTeacher(true);
+            setTeacherUser(teacher);
+          } else {
+            setIsTeacher(false);
+            setTeacherUser(null);
+          }
+        } else {
+          setIsTeacher(false);
+          setTeacherUser(null);
+        }
+      }
     });
 
     const unsubInfo = schoolService.subscribeToInfo((info) => {
@@ -1659,12 +1686,11 @@ export default function App() {
     const unsubAnn = announcementService.subscribe(setAnnouncements);
     const unsubDocs = documentService.subscribe(setDocuments);
     const unsubWork = classWorkService.subscribe(setClassWork);
-    const unsubTeachers = teacherService.subscribe((tList) => {
-      setTeachers(tList);
-      if (user) {
-        setIsTeacher(tList.some(t => t.email === user.email));
-      }
-    });
+    
+    let unsubTeachers: (() => void) | undefined;
+    if (isAdmin) {
+      unsubTeachers = teacherService.subscribe(setTeachers);
+    }
 
     return () => {
       unsubAuth();
@@ -1672,7 +1698,7 @@ export default function App() {
       unsubAnn();
       unsubDocs();
       unsubWork();
-      unsubTeachers();
+      if (unsubTeachers) unsubTeachers();
     };
   }, [isAdmin, user]);
 

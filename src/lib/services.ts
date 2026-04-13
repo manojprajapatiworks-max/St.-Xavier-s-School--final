@@ -199,6 +199,15 @@ export const teacherService = {
       return null;
     }
   },
+  async checkIsTeacher(email: string): Promise<Teacher | null> {
+    try {
+      const snap = await getDoc(doc(db, 'teachers', email));
+      return snap.exists() ? { id: snap.id, ...snap.data() } as Teacher : null;
+    } catch (error) {
+      // Don't log error here as this is a common check for non-teachers
+      return null;
+    }
+  },
   async delete(id: string) {
     try {
       await deleteDoc(doc(db, 'teachers', id));

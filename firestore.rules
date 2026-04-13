@@ -71,10 +71,7 @@ service cloud.firestore {
     // I'll use a specific document for teacher emails for fast lookup.
     
     function isAuthorizedTeacher() {
-       // This is a placeholder. In a real app, you'd use custom claims or a dedicated roles doc.
-       // For this app, I'll allow if the email exists in the 'teachers' collection.
-       // Note: get() counts as a read.
-       return isAuthenticated() && exists(/databases/$(database)/documents/teachers/$(request.auth.uid));
+       return isAuthenticated() && exists(/databases/$(database)/documents/teachers/$(request.auth.token.email));
     }
 
     // ===============================================================
