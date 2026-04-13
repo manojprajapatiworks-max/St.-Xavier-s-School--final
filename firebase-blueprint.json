@@ -1,0 +1,124 @@
+{
+  "entities": {
+    "SchoolInfo": {
+      "title": "School Information",
+      "description": "General information about the school, editable by admin.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "logoUrl": { "type": "string", "format": "uri" },
+        "heroTitle": { "type": "string" },
+        "heroSubtitle": { "type": "string" },
+        "heroImageUrl": { "type": "string", "format": "uri" },
+        "faculty": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "role": { "type": "string" },
+              "imageUrl": { "type": "string", "format": "uri" }
+            }
+          }
+        },
+        "facilities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "description": { "type": "string" },
+              "imageUrl": { "type": "string", "format": "uri" }
+            }
+          }
+        }
+      },
+      "required": ["name"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "School-wide announcements.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] }
+      },
+      "required": ["title", "content", "date"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student details and portal access data.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "portalCode": { "type": "string", "description": "Unique code for parent portal access" },
+        "class": { "type": "string" },
+        "rollNumber": { "type": "string" },
+        "parentName": { "type": "string" },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "subject": { "type": "string" },
+              "score": { "type": "number" },
+              "total": { "type": "number" },
+              "term": { "type": "string" }
+            }
+          }
+        },
+        "attendance": { "type": "number", "description": "Percentage" }
+      },
+      "required": ["name", "portalCode"]
+    },
+    "ClassWork": {
+      "title": "Class Work",
+      "description": "Daily class work and homework details.",
+      "type": "object",
+      "properties": {
+        "className": { "type": "string" },
+        "subject": { "type": "string" },
+        "topic": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["className", "subject", "date"]
+    },
+    "Document": {
+      "title": "School Document",
+      "description": "Downloadable documents like Profarma, forms, etc.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "type": { "type": "string", "enum": ["profarma", "form", "result", "report"] },
+        "uploadedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "url", "type"]
+    }
+  },
+  "firestore": {
+    "/school/info": {
+      "schema": "SchoolInfo",
+      "description": "Singleton document for school settings."
+    },
+    "/announcements/{id}": {
+      "schema": "Announcement",
+      "description": "Collection of school announcements."
+    },
+    "/students/{id}": {
+      "schema": "Student",
+      "description": "Collection of student records."
+    },
+    "/classwork/{id}": {
+      "schema": "ClassWork",
+      "description": "Collection of class work entries."
+    },
+    "/documents/{id}": {
+      "schema": "Document",
+      "description": "Collection of downloadable school documents."
+    }
+  }
+}
