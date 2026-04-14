@@ -97,6 +97,35 @@
         "uploadedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["title", "url", "type"]
+    },
+    "JobPosting": {
+      "title": "Job Posting",
+      "description": "Career opportunities at the school.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "department": { "type": "string" },
+        "description": { "type": "string" },
+        "requirements": { "type": "string" },
+        "postedAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["open", "closed"] }
+      },
+      "required": ["title", "department", "postedAt", "status"]
+    },
+    "ActionLog": {
+      "title": "Action Log",
+      "description": "Audit trail of user actions.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userRole": { "type": "string", "enum": ["admin", "teacher"] },
+        "action": { "type": "string" },
+        "target": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "details": { "type": "string" }
+      },
+      "required": ["userId", "userName", "userRole", "action", "target", "timestamp"]
     }
   },
   "firestore": {
@@ -119,6 +148,14 @@
     "/documents/{id}": {
       "schema": "Document",
       "description": "Collection of downloadable school documents."
+    },
+    "/jobs/{id}": {
+      "schema": "JobPosting",
+      "description": "Collection of job postings."
+    },
+    "/logs/{id}": {
+      "schema": "ActionLog",
+      "description": "Collection of system action logs."
     }
   }
 }

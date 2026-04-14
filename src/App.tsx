@@ -2712,7 +2712,7 @@ export default function App() {
                 teachers={teachers}
                 jobs={jobs}
                 logs={logs}
-                currentUser={isAdmin ? { name: 'Admin', role: 'admin', id: user?.uid || 'admin' } : { name: teacherUser?.name || 'Teacher', role: 'teacher', id: teacherUser?.id || 'teacher', privileges: teacherUser?.privileges }}
+                currentUser={isAdmin ? { name: 'Admin', role: 'admin', id: user?.email?.toLowerCase() || 'admin' } : { name: teacherUser?.name || 'Teacher', role: 'teacher', id: teacherUser?.id || 'teacher', privileges: teacherUser?.privileges }}
               />
             </motion.div>
           )}

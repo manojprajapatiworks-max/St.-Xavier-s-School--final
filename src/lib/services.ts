@@ -32,7 +32,7 @@ export const logService = {
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      console.error("Failed to log action:", error);
+      handleFirestoreError(error, OperationType.WRITE, 'logs');
     }
   },
   subscribe(callback: (logs: ActionLog[]) => void, filters?: { userId?: string, role?: 'admin' | 'teacher' }) {

@@ -30,6 +30,14 @@ service cloud.firestore {
     // Document ID: auto-generated
     // Fields: name, email, subject
     //
+    // Collection: jobs
+    // Document ID: auto-generated
+    // Fields: title, department, description, requirements, postedAt, status
+    //
+    // Collection: logs
+    // Document ID: auto-generated
+    // Fields: userId, userName, userRole, action, target, timestamp, details
+    //
     // ===============================================================
 
     // ===============================================================
@@ -101,6 +109,20 @@ service cloud.firestore {
       allow get: if true;
       allow list: if isAdmin();
       allow write: if isAdmin();
+    }
+
+    // Jobs
+    match /jobs/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Logs
+    match /logs/{id} {
+      allow list: if isAdmin() || (isAuthenticated() && 'email' in request.auth.token && request.query.filters.userId == request.auth.token.email.lower());
+      allow get: if isAdmin() || (isAuthenticated() && 'email' in request.auth.token && resource.data.userId == request.auth.token.email.lower());
+      allow create: if isAdmin() || (isAuthenticated() && 'email' in request.auth.token && request.resource.data.userId == request.auth.token.email.lower());
+      allow update, delete: if false;
     }
 
     // Default deny
