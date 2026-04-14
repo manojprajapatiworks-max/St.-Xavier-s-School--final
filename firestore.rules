@@ -74,6 +74,11 @@ service cloud.firestore {
        return isAuthenticated() && exists(/databases/$(database)/documents/teachers/$(request.auth.token.email));
     }
 
+    function hasTeacherPrivilege(privilege) {
+      return isAuthorizedTeacher() && 
+        get(/databases/$(database)/documents/teachers/$(request.auth.token.email)).data.privileges[privilege] == true;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -99,16 +104,18 @@ service cloud.firestore {
     // Students
     match /students/{portalCode} {
       allow get: if true; 
-      allow list: if isAdmin() || isAuthorizedTeacher();
-      allow create: if isAdmin();
-      allow update: if isAdmin() || isAuthorizedTeacher();
+      allow list: if isAdmin() || hasTeacherPrivilege('students') || hasTeacherPrivilege('results');
+      allow create: if isAdmin() || hasTeacherPrivilege('students');
+      allow update: if isAdmin() || 
+                    hasTeacherPrivilege('students') || 
+                    (hasTeacherPrivilege('results') && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['results', 'lastEditedBy', 'lastEditedAt']));
       allow delete: if isAdmin();
     }
 
     // Class Work
     match /classwork/{id} {
       allow read: if true;
-      allow write: if isAdmin() || isAuthorizedTeacher();
+      allow write: if isAdmin() || hasTeacherPrivilege('classwork');
     }
 
     // Teachers

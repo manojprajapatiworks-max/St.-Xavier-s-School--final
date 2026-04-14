@@ -740,13 +740,15 @@ const AdminDashboard = ({
   
   const [confirmDelete, setConfirmDelete] = useState<{ type: string; id: string; title: string } | null>(null);
 
-  const canManageInfo = currentUser.role === 'admin';
-  const canManageAnnouncements = currentUser.role === 'admin';
-  const canManageTeachers = currentUser.role === 'admin';
-  const canManageStudents = currentUser.role === 'admin' || currentUser.privileges?.students;
-  const canManageResults = currentUser.role === 'admin' || currentUser.privileges?.results;
-  const canManageClassWork = currentUser.role === 'admin' || currentUser.privileges?.classwork;
-  const canManageDocuments = currentUser.role === 'admin';
+  const isAdminRole = currentUser.role === 'admin';
+  const canManageInfo = isAdminRole;
+  const canManageAnnouncements = isAdminRole;
+  const canManageTeachers = isAdminRole;
+  const canManageStudentsFull = isAdminRole || currentUser.privileges?.students;
+  const canManageResults = isAdminRole || currentUser.privileges?.results;
+  const canManageClassWork = isAdminRole || currentUser.privileges?.classwork;
+  const canManageDocuments = isAdminRole;
+  const canSeeStudentsTab = canManageStudentsFull || canManageResults;
 
   useEffect(() => {
     if (info) setEditingInfo(info);
@@ -822,7 +824,7 @@ const AdminDashboard = ({
             {canManageInfo && <TabsTrigger value="info" className="rounded-xl px-6">School Info</TabsTrigger>}
             {canManageAnnouncements && <TabsTrigger value="announcements" className="rounded-xl px-6">Announcements</TabsTrigger>}
             {canManageTeachers && <TabsTrigger value="teachers" className="rounded-xl px-6">Teachers</TabsTrigger>}
-            {canManageStudents && <TabsTrigger value="students" className="rounded-xl px-6">Students</TabsTrigger>}
+            {canSeeStudentsTab && <TabsTrigger value="students" className="rounded-xl px-6">Students</TabsTrigger>}
             {canManageClassWork && <TabsTrigger value="classwork" className="rounded-xl px-6">Class Work</TabsTrigger>}
             {canManageDocuments && <TabsTrigger value="documents" className="rounded-xl px-6">Documents</TabsTrigger>}
           </TabsList>
@@ -1075,7 +1077,7 @@ const AdminDashboard = ({
           )}
 
           {/* Students Tab */}
-          {canManageStudents && (
+          {canSeeStudentsTab && (
             <TabsContent value="students">
               <div className="grid lg:grid-cols-3 gap-8">
                 <Card className="rounded-3xl border-none shadow-sm h-fit">
@@ -1085,6 +1087,7 @@ const AdminDashboard = ({
                       placeholder="Student Name" 
                       value={newStudent.name || ''} 
                       onChange={e => setNewStudent({...newStudent, name: e.target.value})}
+                      disabled={!!selectedStudent && !canManageStudentsFull}
                     />
                     <Input 
                       placeholder="Portal Code (Unique)" 
@@ -1096,21 +1099,25 @@ const AdminDashboard = ({
                       placeholder="Class" 
                       value={newStudent.class || ''} 
                       onChange={e => setNewStudent({...newStudent, class: e.target.value})}
+                      disabled={!!selectedStudent && !canManageStudentsFull}
                     />
                     <Input 
                       placeholder="Roll Number" 
                       value={newStudent.rollNumber || ''} 
                       onChange={e => setNewStudent({...newStudent, rollNumber: e.target.value})}
+                      disabled={!!selectedStudent && !canManageStudentsFull}
                     />
                     <Input 
                       placeholder="Parent Name" 
                       value={newStudent.parentName || ''} 
                       onChange={e => setNewStudent({...newStudent, parentName: e.target.value})}
+                      disabled={!!selectedStudent && !canManageStudentsFull}
                     />
                     <Input 
                       placeholder="Student Image URL" 
                       value={newStudent.imageUrl || ''} 
                       onChange={e => setNewStudent({...newStudent, imageUrl: e.target.value})}
+                      disabled={!!selectedStudent && !canManageStudentsFull}
                     />
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Attendance %</label>
@@ -1121,6 +1128,7 @@ const AdminDashboard = ({
                           const val = e.target.value === '' ? 0 : parseInt(e.target.value);
                           setNewStudent({...newStudent, attendance: isNaN(val) ? 0 : val});
                         }}
+                        disabled={!!selectedStudent && !canManageStudentsFull}
                       />
                     </div>
                     

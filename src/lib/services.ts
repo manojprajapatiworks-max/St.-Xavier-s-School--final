@@ -12,9 +12,26 @@ import {
   orderBy,
   addDoc
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  updatePassword
+} from 'firebase/auth';
+import { initializeApp, getApp, FirebaseApp } from 'firebase/app';
+import { db, auth } from '../firebase';
+import firebaseConfig from '../../firebase-applet-config.json';
 import { handleFirestoreError, OperationType } from './firebase-utils';
 import { SchoolInfo, Announcement, Student, ClassWork, SchoolDocument, Teacher } from '../types';
+
+// Secondary app for creating users without signing out admin
+let secondaryApp: FirebaseApp;
+try {
+  secondaryApp = getApp('Secondary');
+} catch (e) {
+  secondaryApp = initializeApp(firebaseConfig, 'Secondary');
+}
+const secondaryAuth = getAuth(secondaryApp);
 
 const SCHOOL_INFO_PATH = 'school/info';
 
@@ -178,18 +195,50 @@ export const teacherService = {
     });
   },
   async add(teacher: Omit<Teacher, 'id'>) {
+    if (!teacher.email) throw new Error("Teacher email is required");
     try {
-      if (!teacher.email) throw new Error("Email is required");
+      // 1. Create user in Firebase Auth (if password provided)
+      if (teacher.password) {
+        try {
+          await createUserWithEmailAndPassword(secondaryAuth, teacher.email, teacher.password);
+        } catch (authError: any) {
+          if (authError.code === 'auth/email-already-in-use') {
+            console.log("Auth user already exists for", teacher.email);
+          } else if (authError.code === 'auth/operation-not-allowed') {
+            throw new Error("Email/Password authentication is not enabled in Firebase Console. Please enable it to use teacher passwords.");
+          } else {
+            throw authError;
+          }
+        }
+      }
+      // 2. Save teacher doc to Firestore
       await setDoc(doc(db, 'teachers', teacher.email), teacher);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'teachers');
+      throw error;
     }
   },
   async login(email: string, password: string): Promise<Teacher | null> {
     try {
+      // 1. Sign in with Firebase Auth
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (authError: any) {
+        if (authError.code === 'auth/operation-not-allowed') {
+          console.warn("Email/Password auth not enabled. Falling back to doc check (limited permissions).");
+        } else if (authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
+          // Auth failed, but we might still check the doc for backward compatibility or if Auth is disabled
+          console.warn("Auth failed, checking doc...");
+        } else {
+          throw authError;
+        }
+      }
+
+      // 2. Get teacher data from Firestore
       const snap = await getDoc(doc(db, 'teachers', email));
       if (!snap.exists()) return null;
       const data = snap.data() as Teacher;
+      
       if (data.password === password) {
         return { id: snap.id, ...data };
       }
