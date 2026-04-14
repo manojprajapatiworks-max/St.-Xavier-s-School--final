@@ -227,14 +227,29 @@ export const teacherService = {
 
       // 2. Get teacher data from Firestore
       const snap = await getDoc(doc(db, 'teachers', lowerEmail));
-      if (!snap.exists()) return null;
+      if (!snap.exists()) {
+        console.error("Teacher document not found for", lowerEmail);
+        return null;
+      }
       const data = snap.data() as Teacher;
       
       return { id: snap.id, ...data };
-    } catch (error) {
+    } catch (error: any) {
       // If Auth failed, we don't return the teacher
-      console.error("Teacher login failed:", error);
-      return null;
+      console.error("Teacher login failed:", error.code, error.message);
+      throw error; // Throw so UI can show specific error if needed
+    }
+  },
+  async syncAuth(email: string, password: string) {
+    const lowerEmail = email.toLowerCase();
+    try {
+      await createUserWithEmailAndPassword(secondaryAuth, lowerEmail, password);
+      return { success: true, message: "Auth account created successfully" };
+    } catch (error: any) {
+      if (error.code === 'auth/email-already-in-use') {
+        return { success: true, message: "Auth account already exists" };
+      }
+      throw error;
     }
   },
   async checkIsTeacher(email: string): Promise<Teacher | null> {

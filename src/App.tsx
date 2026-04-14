@@ -35,7 +35,8 @@ import {
   ArrowRight,
   Linkedin,
   Megaphone,
-  Lock
+  Lock,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from './firebase';
@@ -1712,7 +1713,31 @@ const AdminDashboard = ({
                 <div className="lg:col-span-2 space-y-6">
                   <div className="flex items-center justify-between mb-4 px-2">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Faculty Directory</h3>
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{teachers.length} Accounts</div>
+                    <div className="flex items-center gap-4">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-8 rounded-xl text-xs font-bold border-slate-200 hover:bg-primary hover:text-white hover:border-primary transition-all"
+                        onClick={async () => {
+                          const loadingToast = toast.loading("Syncing all faculty accounts...");
+                          let successCount = 0;
+                          let failCount = 0;
+                          for (const t of teachers) {
+                            try {
+                              await teacherService.syncAuth(t.email, t.password);
+                              successCount++;
+                            } catch (err) {
+                              failCount++;
+                            }
+                          }
+                          toast.dismiss(loadingToast);
+                          toast.success(`Sync complete: ${successCount} accounts ready. ${failCount} already synced or failed.`);
+                        }}
+                      >
+                        <RefreshCw className="w-3 h-3 mr-2" /> Sync All Accounts
+                      </Button>
+                      <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{teachers.length} Accounts</div>
+                    </div>
                   </div>
                   <div className="grid md:grid-cols-2 gap-6">
                     {teachers.map(t => (
@@ -1740,7 +1765,24 @@ const AdminDashboard = ({
                           
                           <div className="space-y-4">
                             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Contact & Access</div>
+                              <div className="flex justify-between items-center mb-1">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contact & Access</div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 px-2 text-[10px] font-black text-primary hover:bg-primary/10 rounded-lg"
+                                  onClick={async () => {
+                                    try {
+                                      const res = await teacherService.syncAuth(t.email, t.password);
+                                      toast.success(res.message);
+                                    } catch (err: any) {
+                                      toast.error("Sync failed: " + err.message);
+                                    }
+                                  }}
+                                >
+                                  <RefreshCw className="w-3 h-3 mr-1" /> Sync Auth
+                                </Button>
+                              </div>
                               <div className="text-sm font-bold text-slate-700 mb-1">{t.email}</div>
                               <div className="inline-flex px-2 py-0.5 rounded bg-blue-100 text-primary font-mono text-[10px] font-black">PASS: {t.password}</div>
                             </div>
@@ -2072,10 +2114,16 @@ const LoginView = ({ onTeacherLogin, onAdminLogin }: { onTeacherLogin: (t: Teach
         onTeacherLogin(teacher);
         toast.success("Welcome back, " + teacher.name);
       } else {
-        toast.error("Invalid teacher credentials.");
+        toast.error("Teacher profile found but login failed. Please contact admin.");
       }
-    } catch (error) {
-      toast.error("Login failed. Please check your credentials.");
+    } catch (error: any) {
+      if (error.code === 'auth/invalid-credential') {
+        toast.error("Invalid email or password. Please check your credentials.");
+      } else if (error.code === 'auth/user-disabled') {
+        toast.error("This account has been disabled.");
+      } else {
+        toast.error("Login failed. " + (error.message || "Please check your connection."));
+      }
     } finally {
       setLoading(false);
     }
