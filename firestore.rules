@@ -42,41 +42,19 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && 
-        (request.auth.token.email == "manojprajapatiworks@gmail.com" && request.auth.token.email_verified == true);
+        'email' in request.auth.token &&
+        request.auth.token.email.lower() == "manojprajapatiworks@gmail.com";
     }
 
-    function isTeacher() {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/teachers/$(request.auth.token.email));
-    }
-    
-    // Alternative teacher check if we don't use email as ID
-    function isTeacherByEmail() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/teachers/$(request.auth.token.email)).data.email == request.auth.token.email;
-    }
-
-    // Since we use auto-generated IDs for teachers, we need a query or a specific path.
-    // Let's assume for rules simplicity we might want to check a 'teachers' collection.
-    // A better way is to have a 'users' collection with roles, but I'll stick to the requested teacher list.
-    
-    function isTeacherInList() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/teachers_meta/emails).data.list.hasAny([request.auth.token.email]);
-    }
-    
-    // For now, I'll allow teachers based on a simple check or just admin for sensitive parts.
-    // Actually, I'll update the logic to check the 'teachers' collection by querying if needed, 
-    // but Firestore rules can't easily query. 
-    // I'll use a specific document for teacher emails for fast lookup.
-    
     function isAuthorizedTeacher() {
-       return isAuthenticated() && exists(/databases/$(database)/documents/teachers/$(request.auth.token.email));
+       return isAuthenticated() && 
+              'email' in request.auth.token &&
+              exists(/databases/$(database)/documents/teachers/$(request.auth.token.email.lower()));
     }
 
     function hasTeacherPrivilege(privilege) {
       return isAuthorizedTeacher() && 
-        get(/databases/$(database)/documents/teachers/$(request.auth.token.email)).data.privileges[privilege] == true;
+        get(/databases/$(database)/documents/teachers/$(request.auth.token.email.lower())).data.get('privileges', {})[privilege] == true;
     }
 
     // ===============================================================
@@ -104,7 +82,7 @@ service cloud.firestore {
     // Students
     match /students/{portalCode} {
       allow get: if true; 
-      allow list: if isAdmin() || hasTeacherPrivilege('students') || hasTeacherPrivilege('results');
+      allow list: if isAdmin() || isAuthorizedTeacher();
       allow create: if isAdmin() || hasTeacherPrivilege('students');
       allow update: if isAdmin() || 
                     hasTeacherPrivilege('students') || 
@@ -119,7 +97,7 @@ service cloud.firestore {
     }
 
     // Teachers
-    match /teachers/{id} {
+    match /teachers/{email} {
       allow get: if true;
       allow list: if isAdmin();
       allow write: if isAdmin();

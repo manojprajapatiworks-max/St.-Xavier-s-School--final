@@ -2208,7 +2208,7 @@ export default function App() {
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      if (u?.email === "manojprajapatiworks@gmail.com") {
+      if (u?.email?.toLowerCase() === "manojprajapatiworks@gmail.com") {
         setIsAdmin(true);
         setIsTeacher(false);
       } else {
@@ -2263,7 +2263,7 @@ export default function App() {
     const unsubWork = classWorkService.subscribe(setClassWork);
     
     let unsubTeachers: (() => void) | undefined;
-    if (isAdmin) {
+    if (isAdmin && user) {
       unsubTeachers = teacherService.subscribe(setTeachers);
     }
 
@@ -2278,11 +2278,11 @@ export default function App() {
   }, [isAdmin, user]);
 
   useEffect(() => {
-    if (isAdmin || isTeacher) {
+    if ((isAdmin || isTeacher) && user) {
       const unsub = studentService.subscribeAll(setStudents);
       return unsub;
     }
-  }, [isAdmin, isTeacher]);
+  }, [isAdmin, isTeacher, user]);
 
   const handleLogin = async () => {
     setActiveTab('login');

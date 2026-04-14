@@ -196,14 +196,15 @@ export const teacherService = {
   },
   async add(teacher: Omit<Teacher, 'id'>) {
     if (!teacher.email) throw new Error("Teacher email is required");
+    const email = teacher.email.toLowerCase();
     try {
       // 1. Create user in Firebase Auth (if password provided)
       if (teacher.password) {
         try {
-          await createUserWithEmailAndPassword(secondaryAuth, teacher.email, teacher.password);
+          await createUserWithEmailAndPassword(secondaryAuth, email, teacher.password);
         } catch (authError: any) {
           if (authError.code === 'auth/email-already-in-use') {
-            console.log("Auth user already exists for", teacher.email);
+            console.log("Auth user already exists for", email);
           } else if (authError.code === 'auth/operation-not-allowed') {
             throw new Error("Email/Password authentication is not enabled in Firebase Console. Please enable it to use teacher passwords.");
           } else {
@@ -212,48 +213,36 @@ export const teacherService = {
         }
       }
       // 2. Save teacher doc to Firestore
-      await setDoc(doc(db, 'teachers', teacher.email), teacher);
+      await setDoc(doc(db, 'teachers', email), { ...teacher, email });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'teachers');
       throw error;
     }
   },
   async login(email: string, password: string): Promise<Teacher | null> {
+    const lowerEmail = email.toLowerCase();
     try {
       // 1. Sign in with Firebase Auth
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (authError: any) {
-        if (authError.code === 'auth/operation-not-allowed') {
-          console.warn("Email/Password auth not enabled. Falling back to doc check (limited permissions).");
-        } else if (authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
-          // Auth failed, but we might still check the doc for backward compatibility or if Auth is disabled
-          console.warn("Auth failed, checking doc...");
-        } else {
-          throw authError;
-        }
-      }
+      await signInWithEmailAndPassword(auth, lowerEmail, password);
 
       // 2. Get teacher data from Firestore
-      const snap = await getDoc(doc(db, 'teachers', email));
+      const snap = await getDoc(doc(db, 'teachers', lowerEmail));
       if (!snap.exists()) return null;
       const data = snap.data() as Teacher;
       
-      if (data.password === password) {
-        return { id: snap.id, ...data };
-      }
-      return null;
+      return { id: snap.id, ...data };
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, `teachers/${email}`);
+      // If Auth failed, we don't return the teacher
+      console.error("Teacher login failed:", error);
       return null;
     }
   },
   async checkIsTeacher(email: string): Promise<Teacher | null> {
     try {
-      const snap = await getDoc(doc(db, 'teachers', email));
+      const lowerEmail = email.toLowerCase();
+      const snap = await getDoc(doc(db, 'teachers', lowerEmail));
       return snap.exists() ? { id: snap.id, ...snap.data() } as Teacher : null;
     } catch (error) {
-      // Don't log error here as this is a common check for non-teachers
       return null;
     }
   },
