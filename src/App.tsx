@@ -47,7 +47,9 @@ import {
   studentService, 
   classWorkService, 
   documentService,
-  teacherService
+  teacherService,
+  logService,
+  jobService
 } from './lib/services';
 import { 
   SchoolInfo, 
@@ -58,7 +60,9 @@ import {
   TestResult,
   Teacher,
   FacultyMember,
-  Facility
+  Facility,
+  JobPosting,
+  ActionLog
 } from './types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -112,6 +116,7 @@ const Navbar = ({
     { id: 'portal', label: 'Parents Portal', icon: Users },
     { id: 'announcements', label: 'Announcements', icon: Bell },
     { id: 'documents', label: 'Documents', icon: Download },
+    { id: 'careers', label: 'Careers', icon: UserPlus },
   ];
 
   if (isAdmin) {
@@ -248,18 +253,22 @@ const Hero = ({ info }: { info: SchoolInfo | null }) => {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % images.length);
-    }, 5000);
+    }, 8000);
     return () => clearInterval(timer);
   }, [images.length]);
 
+  const isVideo = (url: string) => {
+    return url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.webm') || url.toLowerCase().endsWith('.ogg');
+  };
+
   return (
     <div className="relative h-[100vh] w-full overflow-hidden">
-      {/* Image Overlay */}
+      {/* Media Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-950/90 via-blue-900/40 to-transparent z-10" />
       <div className="absolute inset-0 bg-gradient-to-t from-blue-950/80 via-transparent to-blue-950/20 z-10" />
       
-      {/* Background Images */}
-      {images.map((img, idx) => (
+      {/* Background Media */}
+      {images.map((media, idx) => (
         <motion.div
           key={idx}
           initial={{ opacity: 0, scale: 1.1 }}
@@ -270,12 +279,23 @@ const Hero = ({ info }: { info: SchoolInfo | null }) => {
           transition={{ duration: 1.5, ease: "easeInOut" }}
           className="absolute inset-0"
         >
-          <img
-            src={img}
-            alt={`School ${idx + 1}`}
-            className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
+          {isVideo(media) ? (
+            <video
+              src={media}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <img
+              src={media}
+              alt={`School ${idx + 1}`}
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          )}
         </motion.div>
       ))}
 
@@ -315,7 +335,7 @@ const Hero = ({ info }: { info: SchoolInfo | null }) => {
       </div>
 
       {/* Slider Indicators */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-4 z-20">
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-4 z-20 max-w-[90vw] overflow-x-auto no-scrollbar px-4">
         {images.map((_, idx) => (
           <button
             key={idx}
@@ -342,6 +362,68 @@ const Hero = ({ info }: { info: SchoolInfo | null }) => {
   );
 };
 
+const CareersSection = ({ jobs }: { jobs: JobPosting[] }) => {
+  return (
+    <div className="py-32 bg-slate-50 min-h-screen">
+      <div className="max-w-5xl mx-auto px-4">
+        <div className="text-center mb-20">
+          <Badge className="bg-primary/10 text-primary border-none px-4 py-1.5 rounded-full mb-6 font-bold uppercase tracking-widest text-[10px]">Join Our Team</Badge>
+          <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight mb-6">Career Opportunities</h1>
+          <p className="text-slate-500 text-lg font-medium max-w-2xl mx-auto">
+            Become a part of our mission to empower minds and shape futures. We are always looking for passionate educators and staff members.
+          </p>
+        </div>
+
+        {jobs.length === 0 ? (
+          <div className="bg-white rounded-[3rem] p-20 text-center shadow-xl shadow-blue-900/5">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <UserPlus className="w-10 h-10 text-slate-300" />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">No Openings Right Now</h3>
+            <p className="text-slate-500">Check back later or follow us on social media for updates.</p>
+          </div>
+        ) : (
+          <div className="grid gap-8">
+            {jobs.filter(j => j.status === 'open').map(job => (
+              <Card key={job.id} className="rounded-[2.5rem] border-none shadow-xl shadow-blue-900/5 bg-white overflow-hidden group hover:shadow-2xl transition-all">
+                <CardContent className="p-10">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-none px-3 py-1 font-bold">{job.department}</Badge>
+                        <span className="text-xs font-bold text-slate-400 flex items-center gap-2">
+                          <Calendar className="w-3.5 h-3.5" />
+                          Posted on {new Date(job.postedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <h3 className="text-3xl font-black text-slate-900 mb-4 group-hover:text-primary transition-colors">{job.title}</h3>
+                      <p className="text-slate-600 font-medium leading-relaxed mb-6">{job.description}</p>
+                      
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Requirements</h4>
+                        <ul className="grid md:grid-cols-2 gap-x-8 gap-y-2">
+                          {job.requirements.split('\n').filter(r => r.trim()).map((req, i) => (
+                            <li key={i} className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                              {req}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    <Button size="lg" className="bg-primary hover:bg-blue-800 text-white rounded-2xl px-10 h-16 font-black text-lg shadow-xl shadow-primary/20 transition-all hover:scale-105 shrink-0">
+                      Apply Now
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 const AnnouncementsSection = ({ announcements }: { announcements: Announcement[] }) => {
   return (
     <section className="py-32 bg-white relative overflow-hidden">
@@ -866,6 +948,8 @@ const AdminDashboard = ({
   students,
   classWork,
   teachers,
+  jobs,
+  logs,
   currentUser
 }: { 
   info: SchoolInfo | null;
@@ -874,7 +958,9 @@ const AdminDashboard = ({
   students: Student[];
   classWork: ClassWork[];
   teachers: Teacher[];
-  currentUser: { name: string; role: string; privileges?: Teacher['privileges'] };
+  jobs: JobPosting[];
+  logs: ActionLog[];
+  currentUser: { name: string; role: 'admin' | 'teacher'; id: string; privileges?: Teacher['privileges'] };
 }) => {
   const [editingInfo, setEditingInfo] = useState<SchoolInfo | null>(info);
   const [newAnn, setNewAnn] = useState({ title: '', content: '', priority: 'medium' as const });
@@ -888,6 +974,7 @@ const AdminDashboard = ({
     password: '',
     privileges: { results: true, classwork: true, students: false }
   });
+  const [newJob, setNewJob] = useState<Partial<JobPosting>>({ title: '', department: '', description: '', requirements: '', status: 'open' });
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   
   const [confirmDelete, setConfirmDelete] = useState<{ type: string; id: string; title: string } | null>(null);
@@ -900,6 +987,8 @@ const AdminDashboard = ({
   const canManageResults = isAdminRole || currentUser.privileges?.results;
   const canManageClassWork = isAdminRole || currentUser.privileges?.classwork;
   const canManageDocuments = isAdminRole;
+  const canManageCareers = isAdminRole;
+  const canSeeLogbook = true; // Both admin and teacher can see their own logs (filtered in App.tsx)
   const canSeeStudentsTab = canManageStudentsFull || canManageResults;
 
   useEffect(() => {
@@ -908,20 +997,21 @@ const AdminDashboard = ({
 
   const handleUpdateInfo = async () => {
     if (editingInfo) {
-      await schoolService.updateInfo(editingInfo);
+      await schoolService.updateInfo(editingInfo, currentUser);
       toast.success("School info updated successfully!");
     }
   };
 
   const handleDelete = async () => {
     if (!confirmDelete) return;
-    const { type, id } = confirmDelete;
+    const { type, id, title } = confirmDelete;
     try {
-      if (type === 'announcement') await announcementService.delete(id);
-      if (type === 'document') await documentService.delete(id);
-      if (type === 'student') await studentService.delete(id);
-      if (type === 'classwork') await classWorkService.delete(id);
-      if (type === 'teacher') await teacherService.delete(id);
+      if (type === 'announcement') await announcementService.delete(id, title, currentUser);
+      if (type === 'document') await documentService.delete(id, title, currentUser);
+      if (type === 'student') await studentService.delete(id, title, currentUser);
+      if (type === 'classwork') await classWorkService.delete(id, title, currentUser);
+      if (type === 'teacher') await teacherService.delete(id, title, currentUser);
+      if (type === 'job') await jobService.delete(id, title, currentUser);
       toast.success("Deleted successfully!");
     } catch (err) {
       toast.error("Error deleting item.");
@@ -929,13 +1019,13 @@ const AdminDashboard = ({
   };
 
   const handleAddAnnouncement = async () => {
-    await announcementService.add({ ...newAnn, date: new Date().toISOString() });
+    await announcementService.add({ ...newAnn, date: new Date().toISOString() }, currentUser);
     setNewAnn({ title: '', content: '', priority: 'medium' });
     toast.success("Announcement added!");
   };
 
   const handleAddDocument = async () => {
-    await documentService.add({ ...newDoc, uploadedAt: new Date().toISOString() });
+    await documentService.add({ ...newDoc, uploadedAt: new Date().toISOString() }, currentUser);
     setNewDoc({ title: '', url: '', type: 'profarma' });
     toast.success("Document added!");
   };
@@ -948,7 +1038,7 @@ const AdminDashboard = ({
         attendance: newStudent.attendance || 100,
         rollNumber: newStudent.rollNumber || '0',
         parentName: newStudent.parentName || '',
-      } as Student, currentUser.name);
+      } as Student, currentUser);
       setNewStudent({ name: '', portalCode: '', class: '', results: [] });
       setSelectedStudent(null);
       toast.success("Student updated!");
@@ -956,9 +1046,17 @@ const AdminDashboard = ({
   };
 
   const handleAddClassWork = async () => {
-    await classWorkService.add({ ...newWork, date: new Date().toISOString() }, currentUser.name);
+    await classWorkService.add({ ...newWork, date: new Date().toISOString() }, currentUser);
     setNewWork({ className: '', subject: '', topic: '', description: '' });
     toast.success("Class work added!");
+  };
+
+  const handleAddJob = async () => {
+    if (newJob.title && newJob.department) {
+      await jobService.add(newJob as Omit<JobPosting, 'id' | 'postedAt'>, currentUser);
+      setNewJob({ title: '', department: '', description: '', requirements: '', status: 'open' });
+      toast.success("Job posting added!");
+    }
   };
 
   return (
@@ -985,6 +1083,8 @@ const AdminDashboard = ({
             {canSeeStudentsTab && <TabsTrigger value="students" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Students</TabsTrigger>}
             {canManageClassWork && <TabsTrigger value="classwork" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Classwork</TabsTrigger>}
             {canManageDocuments && <TabsTrigger value="documents" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Documents</TabsTrigger>}
+            {canManageCareers && <TabsTrigger value="careers" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Careers</TabsTrigger>}
+            {canSeeLogbook && <TabsTrigger value="logbook" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Logbook</TabsTrigger>}
           </TabsList>
 
           {/* School Info Tab */}
@@ -1041,11 +1141,12 @@ const AdminDashboard = ({
                         />
                       </div>
                       <div className="space-y-3 md:col-span-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Hero Images (One per line)</label>
+                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Hero Images/Videos (One URL per line, up to 20)</label>
                         <textarea 
                           className="w-full min-h-[150px] p-5 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium text-sm leading-relaxed"
                           value={editingInfo?.heroImages?.join('\n') || ''}
                           onChange={e => setEditingInfo(prev => prev ? {...prev, heroImages: e.target.value.split('\n').filter(s => s.trim())} : null)}
+                          placeholder="https://example.com/image.jpg&#10;https://example.com/video.mp4"
                         />
                       </div>
                     </div>
@@ -1254,7 +1355,208 @@ const AdminDashboard = ({
             </TabsContent>
           )}
 
-          {/* Announcements Tab */}
+          {/* Careers Tab */}
+          {canManageCareers && (
+            <TabsContent value="careers">
+              <div className="grid lg:grid-cols-3 gap-10">
+                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit sticky top-32">
+                  <div className="bg-slate-900 p-8 text-white">
+                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <UserPlus className="w-5 h-5 text-white" />
+                      </div>
+                      Post Job
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 font-medium mt-1">Add new career opportunities.</CardDescription>
+                  </div>
+                  <CardContent className="p-8 space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Job Title</label>
+                      <Input 
+                        placeholder="e.g. Senior Math Teacher" 
+                        value={newJob.title} 
+                        onChange={e => setNewJob({...newJob, title: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Department</label>
+                      <Input 
+                        placeholder="e.g. Science Department" 
+                        value={newJob.department} 
+                        onChange={e => setNewJob({...newJob, department: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Description</label>
+                      <textarea 
+                        className="w-full min-h-[100px] p-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white transition-all text-sm font-medium" 
+                        placeholder="Job description..."
+                        value={newJob.description}
+                        onChange={e => setNewJob({...newJob, description: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Requirements</label>
+                      <textarea 
+                        className="w-full min-h-[100px] p-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white transition-all text-sm font-medium" 
+                        placeholder="Requirements (one per line)..."
+                        value={newJob.requirements}
+                        onChange={e => setNewJob({...newJob, requirements: e.target.value})}
+                      />
+                    </div>
+                    <Button onClick={handleAddJob} className="w-full h-14 bg-primary hover:bg-blue-800 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 transition-all">
+                      Post Job
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <div className="lg:col-span-2 space-y-6">
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight px-2">Active Job Postings</h3>
+                  {jobs.length === 0 ? (
+                    <div className="bg-white rounded-[2.5rem] p-20 text-center border-2 border-dashed border-slate-100">
+                      <h4 className="text-xl font-bold text-slate-900 mb-2">No job postings</h4>
+                      <p className="text-slate-500">Post a job to start receiving applications.</p>
+                    </div>
+                  ) : (
+                    jobs.map(job => (
+                      <Card key={job.id} className="rounded-[2rem] border-none shadow-xl shadow-blue-900/5 bg-white overflow-hidden group">
+                        <CardContent className="p-8 flex justify-between items-start">
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                              <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-none">{job.department}</Badge>
+                              <span className="text-xs font-bold text-slate-400">{new Date(job.postedAt).toLocaleDateString()}</span>
+                            </div>
+                            <h4 className="text-xl font-black text-slate-900 mb-2">{job.title}</h4>
+                            <p className="text-slate-500 text-sm mb-4 line-clamp-2">{job.description}</p>
+                            <div className="flex gap-2">
+                              <Badge className={job.status === 'open' ? 'bg-emerald-500' : 'bg-slate-400'}>{job.status}</Badge>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => setConfirmDelete({ type: 'job', id: job.id, title: job.title })} 
+                            className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+          )}
+
+          {/* Logbook Tab */}
+          {canSeeLogbook && (
+            <TabsContent value="logbook">
+              <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
+                <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-white" />
+                      </div>
+                      System Logbook
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 font-medium mt-1">
+                      {isAdminRole ? 'Complete audit trail of all administrative and faculty actions.' : 'Your personal activity log.'}
+                    </CardDescription>
+                  </div>
+                  {isAdminRole && (
+                    <Button 
+                      onClick={() => {
+                        const headers = ['Timestamp', 'User', 'Role', 'Action', 'Target', 'Details'];
+                        const csvContent = [
+                          headers.join(','),
+                          ...logs.map(log => [
+                            log.timestamp,
+                            `"${log.userName}"`,
+                            log.userRole,
+                            log.action,
+                            `"${log.target}"`,
+                            `"${log.details?.replace(/"/g, '""') || ''}"`
+                          ].join(','))
+                        ].join('\n');
+                        
+                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        const link = document.createElement('a');
+                        const url = URL.createObjectURL(blob);
+                        link.setAttribute('href', url);
+                        link.setAttribute('download', `school_logs_${new Date().toISOString().split('T')[0]}.csv`);
+                        link.style.visibility = 'hidden';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      className="rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold px-6 h-12 flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" /> Export CSV
+                    </Button>
+                  )}
+                </div>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50/50 border-none">
+                          <TableHead className="font-bold text-slate-900 py-6 pl-8">Timestamp</TableHead>
+                          <TableHead className="font-bold text-slate-900">User</TableHead>
+                          <TableHead className="font-bold text-slate-900">Action</TableHead>
+                          <TableHead className="font-bold text-slate-900">Target</TableHead>
+                          <TableHead className="font-bold text-slate-900 pr-8">Details</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {logs.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-20 text-slate-400 font-medium">No activity logs found.</TableCell>
+                          </TableRow>
+                        ) : (
+                          logs.map(log => (
+                            <TableRow key={log.id} className="hover:bg-slate-50/50 transition-colors border-slate-50">
+                              <TableCell className="py-4 pl-8">
+                                <div className="text-sm font-bold text-slate-900">{new Date(log.timestamp).toLocaleDateString()}</div>
+                                <div className="text-[10px] text-slate-400 font-bold uppercase">{new Date(log.timestamp).toLocaleTimeString()}</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${
+                                    log.userRole === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                                  }`}>
+                                    {log.userName[0]}
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-bold text-slate-900">{log.userName}</div>
+                                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{log.userRole}</div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={`rounded-lg font-black text-[10px] uppercase tracking-widest border-none ${
+                                  log.action === 'CREATE' ? 'bg-emerald-100 text-emerald-600' :
+                                  log.action === 'UPDATE' ? 'bg-blue-100 text-blue-600' :
+                                  log.action === 'DELETE' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {log.action}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm font-bold text-slate-700">{log.target}</TableCell>
+                              <TableCell className="text-xs text-slate-500 font-medium pr-8 max-w-xs truncate">{log.details}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
           {canManageAnnouncements && (
             <TabsContent value="announcements">
               <div className="grid lg:grid-cols-3 gap-10">
@@ -1691,7 +1993,7 @@ const AdminDashboard = ({
                         return;
                       }
                       try {
-                        await teacherService.add(newTeacher as Teacher);
+                        await teacherService.add(newTeacher as Teacher, currentUser);
                         setNewTeacher({ 
                           name: '', 
                           email: '', 
@@ -2251,6 +2553,8 @@ export default function App() {
   const [students, setStudents] = useState<Student[]>([]);
   const [classWork, setClassWork] = useState<ClassWork[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [jobs, setJobs] = useState<JobPosting[]>([]);
+  const [logs, setLogs] = useState<ActionLog[]>([]);
   const [isTeacher, setIsTeacher] = useState(false);
 
   useEffect(() => {
@@ -2302,17 +2606,25 @@ export default function App() {
             phone: "+1 (555) 123-4567",
             about: "Dedicated to providing a holistic education that empowers students to become lifelong learners and responsible global citizens."
           }
-        });
+        }, { name: 'System', role: 'admin', id: 'system' });
       }
     });
 
     const unsubAnn = announcementService.subscribe(setAnnouncements);
     const unsubDocs = documentService.subscribe(setDocuments);
     const unsubWork = classWorkService.subscribe(setClassWork);
+    const unsubJobs = jobService.subscribe(setJobs);
     
     let unsubTeachers: (() => void) | undefined;
-    if (isAdmin && user) {
-      unsubTeachers = teacherService.subscribe(setTeachers);
+    let unsubLogs: (() => void) | undefined;
+
+    if (user) {
+      if (isAdmin) {
+        unsubTeachers = teacherService.subscribe(setTeachers);
+        unsubLogs = logService.subscribe(setLogs);
+      } else if (isTeacher && teacherUser) {
+        unsubLogs = logService.subscribe(setLogs, { userId: teacherUser.id });
+      }
     }
 
     return () => {
@@ -2321,9 +2633,11 @@ export default function App() {
       unsubAnn();
       unsubDocs();
       unsubWork();
+      unsubJobs();
       if (unsubTeachers) unsubTeachers();
+      if (unsubLogs) unsubLogs();
     };
-  }, [isAdmin, user]);
+  }, [isAdmin, isTeacher, user, teacherUser]);
 
   useEffect(() => {
     if ((isAdmin || isTeacher) && user) {
@@ -2396,7 +2710,9 @@ export default function App() {
                 students={students}
                 classWork={classWork}
                 teachers={teachers}
-                currentUser={isAdmin ? { name: 'Admin', role: 'admin' } : { name: teacherUser?.name || 'Teacher', role: 'teacher', privileges: teacherUser?.privileges }}
+                jobs={jobs}
+                logs={logs}
+                currentUser={isAdmin ? { name: 'Admin', role: 'admin', id: user?.uid || 'admin' } : { name: teacherUser?.name || 'Teacher', role: 'teacher', id: teacherUser?.id || 'teacher', privileges: teacherUser?.privileges }}
               />
             </motion.div>
           )}
@@ -2458,11 +2774,22 @@ export default function App() {
             </motion.div>
           )}
 
+          {activeTab === 'careers' && (
+            <motion.div
+              key="careers"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <CareersSection jobs={jobs} />
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
 
       <Footer info={schoolInfo} />
-      <Toaster position="top-center" />
+      <Toaster position="bottom-right" />
     </div>
   );
 }

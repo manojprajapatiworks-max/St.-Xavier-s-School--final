@@ -22,7 +22,91 @@ import { initializeApp, getApp, FirebaseApp } from 'firebase/app';
 import { db, auth } from '../firebase';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { handleFirestoreError, OperationType } from './firebase-utils';
-import { SchoolInfo, Announcement, Student, ClassWork, SchoolDocument, Teacher } from '../types';
+import { SchoolInfo, Announcement, Student, ClassWork, SchoolDocument, Teacher, ActionLog, JobPosting } from '../types';
+
+export const logService = {
+  async add(log: Omit<ActionLog, 'id' | 'timestamp'>) {
+    try {
+      await addDoc(collection(db, 'logs'), {
+        ...log,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Failed to log action:", error);
+    }
+  },
+  subscribe(callback: (logs: ActionLog[]) => void, filters?: { userId?: string, role?: 'admin' | 'teacher' }) {
+    let q = query(collection(db, 'logs'), orderBy('timestamp', 'desc'));
+    if (filters?.userId) {
+      q = query(q, where('userId', '==', filters.userId));
+    }
+    if (filters?.role) {
+      q = query(q, where('userRole', '==', filters.role));
+    }
+    return onSnapshot(q, (snap) => {
+      callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as ActionLog)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'logs');
+    });
+  }
+};
+
+export const jobService = {
+  subscribe(callback: (jobs: JobPosting[]) => void) {
+    const q = query(collection(db, 'jobs'), orderBy('postedAt', 'desc'));
+    return onSnapshot(q, (snap) => {
+      callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as JobPosting)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'jobs');
+    });
+  },
+  async add(job: Omit<JobPosting, 'id' | 'postedAt'>, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
+    try {
+      const data = { ...job, postedAt: new Date().toISOString() };
+      await addDoc(collection(db, 'jobs'), data);
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'CREATE',
+        target: `Job: ${job.title}`,
+        details: `Posted new job in ${job.department}`
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'jobs');
+    }
+  },
+  async update(id: string, job: Partial<JobPosting>, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
+    try {
+      await updateDoc(doc(db, 'jobs', id), job);
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'UPDATE',
+        target: `Job ID: ${id}`,
+        details: `Updated job posting: ${JSON.stringify(job)}`
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `jobs/${id}`);
+    }
+  },
+  async delete(id: string, jobTitle: string, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
+    try {
+      await deleteDoc(doc(db, 'jobs', id));
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'DELETE',
+        target: `Job: ${jobTitle}`,
+        details: `Deleted job posting ID: ${id}`
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `jobs/${id}`);
+    }
+  }
+};
 
 // Secondary app for creating users without signing out admin
 let secondaryApp: FirebaseApp;
@@ -45,9 +129,17 @@ export const schoolService = {
       return null;
     }
   },
-  async updateInfo(info: SchoolInfo) {
+  async updateInfo(info: SchoolInfo, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
     try {
       await setDoc(doc(db, SCHOOL_INFO_PATH), info);
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'UPDATE',
+        target: 'School Info',
+        details: 'Updated school general information'
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, SCHOOL_INFO_PATH);
     }
@@ -70,16 +162,32 @@ export const announcementService = {
       handleFirestoreError(error, OperationType.LIST, 'announcements');
     });
   },
-  async add(announcement: Omit<Announcement, 'id'>) {
+  async add(announcement: Omit<Announcement, 'id'>, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
     try {
       await addDoc(collection(db, 'announcements'), announcement);
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'CREATE',
+        target: `Announcement: ${announcement.title}`,
+        details: announcement.content.substring(0, 100) + '...'
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'announcements');
     }
   },
-  async delete(id: string) {
+  async delete(id: string, title: string, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
     try {
       await deleteDoc(doc(db, 'announcements', id));
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'DELETE',
+        target: `Announcement: ${title}`,
+        details: `Deleted announcement ID: ${id}`
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'announcements');
     }
@@ -112,21 +220,37 @@ export const studentService = {
       handleFirestoreError(error, OperationType.LIST, 'students');
     });
   },
-  async upsert(student: Student, editorEmail?: string) {
+  async upsert(student: Student, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
     try {
       const data = {
         ...student,
-        lastEditedBy: editorEmail || 'system',
+        lastEditedBy: editor.name,
         lastEditedAt: new Date().toISOString()
       };
       await setDoc(doc(db, 'students', student.portalCode), data);
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'UPSERT',
+        target: `Student: ${student.name}`,
+        details: `Updated/Created student record for ${student.portalCode}`
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'students');
     }
   },
-  async delete(portalCode: string) {
+  async delete(portalCode: string, studentName: string, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
     try {
       await deleteDoc(doc(db, 'students', portalCode));
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'DELETE',
+        target: `Student: ${studentName}`,
+        details: `Deleted student record for ${portalCode}`
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'students');
     }
@@ -142,19 +266,35 @@ export const classWorkService = {
       handleFirestoreError(error, OperationType.LIST, 'classwork');
     });
   },
-  async add(work: Omit<ClassWork, 'id'>, editorName?: string) {
+  async add(work: Omit<ClassWork, 'id'>, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
     try {
       await addDoc(collection(db, 'classwork'), {
         ...work,
-        lastEditedBy: editorName || 'system'
+        lastEditedBy: editor.name
+      });
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'CREATE',
+        target: `ClassWork: ${work.topic}`,
+        details: `Posted work for ${work.className} in ${work.subject}`
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'classwork');
     }
   },
-  async delete(id: string) {
+  async delete(id: string, topic: string, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
     try {
       await deleteDoc(doc(db, 'classwork', id));
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'DELETE',
+        target: `ClassWork: ${topic}`,
+        details: `Deleted classwork ID: ${id}`
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'classwork');
     }
@@ -170,16 +310,32 @@ export const documentService = {
       handleFirestoreError(error, OperationType.LIST, 'documents');
     });
   },
-  async add(docData: Omit<SchoolDocument, 'id'>) {
+  async add(docData: Omit<SchoolDocument, 'id'>, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
     try {
       await addDoc(collection(db, 'documents'), docData);
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'CREATE',
+        target: `Document: ${docData.title}`,
+        details: `Uploaded ${docData.type} document`
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'documents');
     }
   },
-  async delete(id: string) {
+  async delete(id: string, title: string, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
     try {
       await deleteDoc(doc(db, 'documents', id));
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'DELETE',
+        target: `Document: ${title}`,
+        details: `Deleted document ID: ${id}`
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'documents');
     }
@@ -194,7 +350,7 @@ export const teacherService = {
       handleFirestoreError(error, OperationType.LIST, 'teachers');
     });
   },
-  async add(teacher: Omit<Teacher, 'id'>) {
+  async add(teacher: Omit<Teacher, 'id'>, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
     if (!teacher.email) throw new Error("Teacher email is required");
     const email = teacher.email.toLowerCase();
     try {
@@ -214,6 +370,14 @@ export const teacherService = {
       }
       // 2. Save teacher doc to Firestore
       await setDoc(doc(db, 'teachers', email), { ...teacher, email });
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'CREATE',
+        target: `Teacher: ${teacher.name}`,
+        details: `Added teacher account for ${email}`
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'teachers');
       throw error;
@@ -261,9 +425,17 @@ export const teacherService = {
       return null;
     }
   },
-  async delete(id: string) {
+  async delete(id: string, teacherName: string, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
     try {
       await deleteDoc(doc(db, 'teachers', id));
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'DELETE',
+        target: `Teacher: ${teacherName}`,
+        details: `Deleted teacher account for ${id}`
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'teachers');
     }

@@ -90,3 +90,24 @@ export interface SchoolDocument {
   type: 'profarma' | 'form' | 'result' | 'report';
   uploadedAt: string;
 }
+
+export interface JobPosting {
+  id: string;
+  title: string;
+  department: string;
+  description: string;
+  requirements: string;
+  postedAt: string;
+  status: 'open' | 'closed';
+}
+
+export interface ActionLog {
+  id: string;
+  userId: string;
+  userName: string;
+  userRole: 'admin' | 'teacher';
+  action: string;
+  target: string;
+  timestamp: string;
+  details?: string;
+}
