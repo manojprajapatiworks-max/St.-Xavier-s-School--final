@@ -21,6 +21,7 @@ export interface FacultyMember {
   name: string;
   role: string;
   imageUrl: string;
+  qualification?: string;
 }
 
 export interface Facility {

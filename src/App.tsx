@@ -31,7 +31,11 @@ import {
   Mail,
   Phone,
   Info,
-  Building2
+  Building2,
+  ArrowRight,
+  Linkedin,
+  Megaphone,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from './firebase';
@@ -94,6 +98,13 @@ const Navbar = ({
   onLogout: () => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
@@ -107,58 +118,80 @@ const Navbar = ({
   }
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-bottom border-gray-100">
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      scrolled ? 'bg-white/80 backdrop-blur-xl shadow-lg py-3' : 'bg-transparent py-6'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-20 items-center">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('home')}>
-            <div className="bg-blue-600 p-2 rounded-xl">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActiveTab('home')}>
+            <div className="bg-primary p-2.5 rounded-2xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-300">
               <School className="text-white w-6 h-6" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-gray-900">St. Xavier's</span>
+            <div className="flex flex-col">
+              <span className={`text-xl font-extrabold tracking-tight leading-none transition-colors duration-300 ${scrolled ? 'text-slate-900' : 'text-white'}`}>St. Xavier's</span>
+              <span className={`text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-300 ${scrolled ? 'text-primary' : 'text-blue-200'}`}>Academy of Excellence</span>
+            </div>
           </div>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-blue-600 ${
-                  activeTab === item.id ? 'text-blue-600' : 'text-gray-600'
+                className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                  activeTab === item.id 
+                    ? scrolled ? 'bg-primary/10 text-primary' : 'bg-white/20 text-white'
+                    : scrolled ? 'text-slate-600 hover:bg-slate-100' : 'text-white/80 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 <item.icon className="w-4 h-4" />
                 {item.label}
               </button>
             ))}
+            
+            <div className={`h-6 w-px mx-4 ${scrolled ? 'bg-slate-200' : 'bg-white/20'}`} />
+
             {user ? (
-              <div className="flex items-center gap-4 pl-4 border-l border-gray-200">
-                {user.photoURL ? (
-                  <img src={user.photoURL} className="w-8 h-8 rounded-full border border-gray-200" alt="profile" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold">
-                    {user.displayName?.[0] || user.email?.[0] || 'U'}
-                  </div>
-                )}
-                <Button variant="ghost" size="sm" onClick={onLogout}>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 bg-slate-100/50 p-1 pr-4 rounded-full border border-white/20">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} className="w-8 h-8 rounded-full shadow-sm" alt="profile" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
+                      {user.displayName?.[0] || user.email?.[0] || 'U'}
+                    </div>
+                  )}
+                  <span className={`text-sm font-bold transition-colors duration-300 ${scrolled ? 'text-slate-700' : 'text-white'}`}>
+                    {user.displayName?.split(' ')[0] || 'User'}
+                  </span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={onLogout}
+                  className={`rounded-xl font-bold transition-colors duration-300 ${scrolled ? 'text-red-500 hover:bg-red-50' : 'text-white hover:bg-white/10'}`}
+                >
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </Button>
               </div>
             ) : (
-              <Button size="sm" onClick={onLogin} className="bg-blue-600 hover:bg-blue-700">
+              <Button 
+                size="lg" 
+                onClick={onLogin} 
+                className="bg-primary hover:bg-blue-800 text-white rounded-2xl px-8 font-bold shadow-xl shadow-primary/20 transition-all hover:scale-105"
+              >
                 <LogIn className="w-4 h-4 mr-2" />
-                Admin Login
+                Portal Login
               </Button>
             )}
           </div>
 
           {/* Mobile Menu Toggle */}
-          <div className="md:hidden">
-            <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-gray-600">
-              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+          <button className={`md:hidden p-2 rounded-xl transition-colors duration-300 ${scrolled ? 'bg-slate-100 text-slate-900' : 'bg-white/10 text-white'}`} onClick={() => setIsOpen(!isOpen)}>
+            {isOpen ? <X /> : <Menu />}
+          </button>
         </div>
       </div>
 
@@ -219,44 +252,61 @@ const Hero = ({ info }: { info: SchoolInfo | null }) => {
   }, [images.length]);
 
   return (
-    <div className="relative h-[700px] overflow-hidden bg-gray-900">
-      <AnimatePresence mode="wait">
-        <motion.img
-          key={currentImage}
-          src={images[currentImage]}
+    <div className="relative h-[100vh] w-full overflow-hidden">
+      {/* Image Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-950/90 via-blue-900/40 to-transparent z-10" />
+      <div className="absolute inset-0 bg-gradient-to-t from-blue-950/80 via-transparent to-blue-950/20 z-10" />
+      
+      {/* Background Images */}
+      {images.map((img, idx) => (
+        <motion.div
+          key={idx}
           initial={{ opacity: 0, scale: 1.1 }}
-          animate={{ opacity: 0.6, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1.5 }}
-          className="absolute inset-0 w-full h-full object-cover"
-          alt="School Hero"
-          referrerPolicy="no-referrer"
-        />
-      </AnimatePresence>
-      
-      <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/40 to-transparent" />
-      
-      <div className="relative max-w-7xl mx-auto px-4 h-full flex flex-col justify-center">
+          animate={{ 
+            opacity: currentImage === idx ? 1 : 0,
+            scale: currentImage === idx ? 1 : 1.1
+          }}
+          transition={{ duration: 1.5, ease: "easeInOut" }}
+          className="absolute inset-0"
+        >
+          <img
+            src={img}
+            alt={`School ${idx + 1}`}
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        </motion.div>
+      ))}
+
+      {/* Content */}
+      <div className="relative z-20 h-full max-w-7xl mx-auto px-4 flex flex-col justify-center">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
           className="max-w-3xl"
         >
-          <Badge className="mb-6 bg-blue-600 text-white border-none px-4 py-1 text-sm font-semibold tracking-wide uppercase">
-            Excellence in Education
-          </Badge>
-          <h1 className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter leading-[0.9] uppercase">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+            className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full mb-8"
+          >
+            <Badge className="bg-accent text-white border-none px-3 py-1">New Session 2026-27</Badge>
+            <span className="text-white/90 text-sm font-bold tracking-wide">Admissions are now open!</span>
+          </motion.div>
+          
+          <h1 className="text-6xl md:text-8xl font-extrabold text-white mb-8 leading-[0.9] tracking-tighter text-balance">
             {info?.heroTitle || "Empowering Minds, Shaping Futures"}
           </h1>
-          <p className="text-xl md:text-2xl text-gray-200 mb-10 leading-relaxed font-medium max-w-xl">
+          <p className="text-xl md:text-2xl text-blue-100/90 mb-12 leading-relaxed font-medium max-w-xl text-balance">
             {info?.heroSubtitle || "Join St. Xavier's School, where we nurture creativity, character, and academic excellence in every student."}
           </p>
           <div className="flex flex-wrap gap-6">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-10 h-14 text-lg font-bold shadow-2xl shadow-blue-600/20 transition-all hover:scale-105">
-              Apply Now
+            <Button size="lg" className="bg-accent hover:bg-orange-600 text-white rounded-2xl px-12 h-16 text-lg font-extrabold shadow-2xl shadow-accent/20 transition-all hover:scale-105 active:scale-95">
+              Apply Now <ChevronRight className="ml-2 w-5 h-5" />
             </Button>
-            <Button size="lg" variant="outline" className="text-white border-white/40 hover:bg-white/10 rounded-full px-10 h-14 text-lg font-bold backdrop-blur-sm transition-all hover:scale-105">
+            <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 rounded-2xl px-12 h-16 text-lg font-extrabold backdrop-blur-md transition-all hover:scale-105 active:scale-95">
               Virtual Tour
             </Button>
           </div>
@@ -264,63 +314,98 @@ const Hero = ({ info }: { info: SchoolInfo | null }) => {
       </div>
 
       {/* Slider Indicators */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-4 z-20">
         {images.map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrentImage(idx)}
-            className={`h-1.5 transition-all rounded-full ${
-              currentImage === idx ? 'w-12 bg-blue-600' : 'w-3 bg-white/30 hover:bg-white/50'
-            }`}
-          />
+            className="group py-4 px-2"
+          >
+            <div className={`h-1.5 transition-all duration-500 rounded-full ${
+              currentImage === idx ? 'w-16 bg-accent' : 'w-4 bg-white/30 group-hover:bg-white/50'
+            }`} />
+          </button>
         ))}
       </div>
+      
+      {/* Scroll Indicator */}
+      <motion.div 
+        animate={{ y: [0, 10, 0] }}
+        transition={{ duration: 2, repeat: Infinity }}
+        className="absolute bottom-8 right-12 z-20 hidden md:flex flex-col items-center gap-4"
+      >
+        <span className="text-white/40 text-[10px] uppercase tracking-[0.3em] font-bold [writing-mode:vertical-lr]">Scroll to explore</span>
+        <div className="w-px h-12 bg-gradient-to-b from-white/40 to-transparent" />
+      </motion.div>
     </div>
   );
 };
 
 const AnnouncementsSection = ({ announcements }: { announcements: Announcement[] }) => {
   return (
-    <section className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-end mb-12">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Latest Announcements</h2>
-            <p className="text-gray-600">Stay updated with the latest news and events from our school.</p>
+    <section className="py-32 bg-white relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-blue-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-50" />
+      <div className="max-w-7xl mx-auto px-4 relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-xs mb-4">
+              <div className="w-8 h-px bg-primary" />
+              Stay Informed
+            </div>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">Latest Announcements</h2>
+            <p className="text-slate-600 text-lg">Keep up with the vibrant life at St. Xavier's. From academic milestones to cultural celebrations.</p>
           </div>
-          <Button variant="ghost" className="text-blue-600">View All <ChevronRight className="w-4 h-4 ml-1" /></Button>
+          <Button variant="outline" className="rounded-2xl border-slate-200 hover:bg-slate-50 px-8 h-12 font-bold group">
+            View All News <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+          </Button>
         </div>
         <div className="grid md:grid-cols-3 gap-8">
           {announcements.slice(0, 3).map((ann, idx) => (
             <motion.div
               key={ann.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ delay: idx * 0.1 }}
             >
-              <Card className="h-full hover:shadow-xl transition-shadow border-gray-100 overflow-hidden group">
-                <div className={`h-1.5 w-full ${
+              <Card className="h-full group hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-500 border-slate-100 rounded-[2rem] overflow-hidden flex flex-col">
+                <div className={`h-2 w-full ${
                   ann.priority === 'high' ? 'bg-red-500' : 
-                  ann.priority === 'medium' ? 'bg-orange-500' : 'bg-blue-500'
+                  ann.priority === 'medium' ? 'bg-accent' : 'bg-primary'
                 }`} />
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      {new Date(ann.date).toLocaleDateString()}
-                    </span>
-                    <Badge variant="secondary" className="capitalize">{ann.priority}</Badge>
+                <CardHeader className="p-8 pb-4">
+                  <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {new Date(ann.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                    <Badge variant="secondary" className={`rounded-lg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                      ann.priority === 'high' ? 'bg-red-50 text-red-600' : 
+                      ann.priority === 'medium' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'
+                    }`}>
+                      {ann.priority}
+                    </Badge>
                   </div>
-                  <CardTitle className="group-hover:text-blue-600 transition-colors">{ann.title}</CardTitle>
+                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors leading-tight">
+                    {ann.title}
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 line-clamp-3">{ann.content}</p>
+                <CardContent className="p-8 pt-0 flex-grow">
+                  <p className="text-slate-600 leading-relaxed line-clamp-4">{ann.content}</p>
                 </CardContent>
+                <div className="p-8 pt-0 mt-auto">
+                  <div className="h-px w-full bg-slate-100 mb-6" />
+                  <button className="text-primary font-bold text-sm flex items-center gap-2 group/btn">
+                    Read Full Story <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                  </button>
+                </div>
               </Card>
             </motion.div>
           ))}
           {announcements.length === 0 && (
-            <div className="col-span-3 py-12 text-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
-              No recent announcements.
+            <div className="col-span-3 py-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+              <Bell className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-400 font-medium">No recent announcements to display.</p>
             </div>
           )}
         </div>
@@ -331,30 +416,54 @@ const AnnouncementsSection = ({ announcements }: { announcements: Announcement[]
 
 const FacultySection = ({ faculty }: { faculty: SchoolInfo['faculty'] }) => {
   return (
-    <section className="py-24 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Distinguished Faculty</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">Meet the dedicated educators who inspire and guide our students every day.</p>
+    <section className="py-32 bg-slate-50 relative overflow-hidden">
+      <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-blue-100/50 rounded-full blur-3xl -ml-20 -mb-20 opacity-30" />
+      <div className="max-w-7xl mx-auto px-4 relative z-10">
+        <div className="text-center mb-20">
+          <div className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-xs mb-4 justify-center">
+            <div className="w-8 h-px bg-primary" />
+            Our Mentors
+            <div className="w-8 h-px bg-primary" />
+          </div>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">Distinguished Faculty</h2>
+          <p className="text-slate-600 max-w-2xl mx-auto text-lg">Meet the visionary educators and subject experts who are dedicated to nurturing the next generation of leaders.</p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           {faculty?.map((member, idx) => (
             <motion.div
               key={idx}
-              whileHover={{ y: -10 }}
-              className="text-center"
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.1 }}
+              whileHover={{ y: -12 }}
+              className="group"
             >
-              <div className="relative mb-4 inline-block">
-                <div className="absolute inset-0 bg-blue-600 rounded-2xl rotate-6 -z-10 opacity-10 group-hover:rotate-12 transition-transform" />
+              <div className="relative mb-6 aspect-[4/5] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-blue-900/10">
                 <img
-                  src={member.imageUrl || `https://picsum.photos/seed/${member.name}/400/400`}
-                  className="w-40 h-40 md:w-48 md:h-48 rounded-2xl object-cover shadow-lg border-4 border-white"
+                  src={member.imageUrl || `https://picsum.photos/seed/${member.name}/600/800`}
                   alt={member.name}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   referrerPolicy="no-referrer"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
+                  <div className="flex gap-3 justify-center">
+                    <button className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-primary transition-all">
+                      <Mail className="w-4 h-4" />
+                    </button>
+                    <button className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-primary transition-all">
+                      <Linkedin className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-lg font-bold text-gray-900">{member.name}</h3>
-              <p className="text-sm text-blue-600 font-medium">{member.role}</p>
+              <div className="text-center">
+                <h4 className="text-xl font-bold text-slate-900 mb-1 group-hover:text-primary transition-colors">{member.name}</h4>
+                <p className="text-primary font-bold text-xs uppercase tracking-widest mb-2">{member.role}</p>
+                <div className="inline-block px-3 py-1 bg-white rounded-full text-[10px] font-bold text-slate-400 border border-slate-100 shadow-sm">
+                  {member.qualification}
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -432,38 +541,60 @@ const ParentPortal = () => {
 
   if (!student) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-32 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_50%)]" />
+        
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-md w-full"
+          className="max-w-md w-full relative z-10"
         >
-          <Card className="p-8 shadow-2xl border-none rounded-3xl">
-            <div className="text-center mb-8">
-              <div className="bg-blue-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Users className="text-blue-600 w-8 h-8" />
+          <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/10 overflow-hidden bg-white/80 backdrop-blur-xl">
+            <div className="bg-primary p-12 text-white text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+              <div className="bg-white/20 w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-6 backdrop-blur-md border border-white/20">
+                <Users className="w-10 h-10 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Parent Portal</h2>
-              <p className="text-gray-600 mt-2">Enter your unique student code to access the portal.</p>
+              <h2 className="text-3xl font-extrabold tracking-tight">Parent Portal</h2>
+              <p className="text-blue-100/80 mt-2 font-medium">Access your child's academic progress</p>
             </div>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Student Portal Code</label>
-                <Input
-                  placeholder="e.g. STX-2024-001"
-                  value={portalCode}
-                  onChange={(e) => setPortalCode(e.target.value)}
-                  className="h-12 rounded-xl"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700" disabled={loading}>
-                {loading ? "Accessing..." : "Unlock Portal"}
-              </Button>
-            </form>
-            <p className="text-center text-xs text-gray-400 mt-6">
-              Contact school administration if you don't have a code.
-            </p>
+            
+            <div className="p-10">
+              <form onSubmit={handleLogin} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Student Portal Code</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input
+                      placeholder="e.g. STX-2024-001"
+                      value={portalCode}
+                      onChange={(e) => setPortalCode(e.target.value)}
+                      className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium"
+                      required
+                    />
+                  </div>
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full h-14 rounded-2xl bg-primary hover:bg-blue-800 text-white font-bold text-lg shadow-xl shadow-primary/20 transition-all active:scale-95"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Unlocking...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      Unlock Portal <ChevronRight className="w-5 h-5" />
+                    </div>
+                  )}
+                </Button>
+              </form>
+              <p className="text-center text-xs text-slate-400 mt-8 font-medium">
+                Please contact the school office if you haven't received your child's portal code.
+              </p>
+            </div>
           </Card>
         </motion.div>
       </div>
@@ -478,74 +609,94 @@ const ParentPortal = () => {
   }));
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-slate-50 py-32">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Student Dashboard</h1>
-            <p className="text-gray-600">Viewing data for <span className="font-semibold text-blue-600">{student.name}</span></p>
+            <div className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-xs mb-3">
+              <div className="w-8 h-px bg-primary" />
+              Parent Dashboard
+            </div>
+            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Academic Overview</h1>
+            <p className="text-slate-500 mt-1 font-medium">Viewing records for <span className="text-primary font-bold">{student.name}</span></p>
           </div>
-          <Button variant="outline" onClick={() => setStudent(null)} className="rounded-xl">
+          <Button 
+            variant="outline" 
+            onClick={() => setStudent(null)} 
+            className="rounded-2xl border-slate-200 hover:bg-white hover:text-red-500 hover:border-red-100 transition-all h-12 px-6 font-bold shadow-sm"
+          >
             <LogOut className="w-4 h-4 mr-2" /> Exit Portal
           </Button>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-10">
           {/* Left Column: Details & Attendance */}
-          <div className="space-y-8">
-            <Card className="rounded-3xl border-none shadow-sm overflow-hidden">
-              <div className="bg-blue-600 p-6 text-white">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold">
+          <div className="space-y-10">
+            <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 overflow-hidden bg-white">
+              <div className="bg-primary p-8 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12 blur-xl" />
+                <div className="flex items-center gap-5 relative z-10">
+                  <div className="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-3xl font-black shadow-inner">
                     {student.name[0]}
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold">{student.name}</h3>
-                    <p className="text-blue-100 text-sm">Class: {student.class}</p>
+                    <h3 className="text-2xl font-extrabold tracking-tight leading-tight">{student.name}</h3>
+                    <p className="text-blue-100/80 font-bold text-xs uppercase tracking-widest mt-1">Class {student.class}</p>
                   </div>
                 </div>
               </div>
-              <CardContent className="p-6 space-y-4">
-                <div className="flex justify-between py-2 border-b border-gray-50">
-                  <span className="text-gray-500">Roll Number</span>
-                  <span className="font-medium">{student.rollNumber}</span>
+              <CardContent className="p-8 space-y-6">
+                <div className="flex justify-between items-center py-3 border-b border-slate-50">
+                  <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Roll Number</span>
+                  <span className="font-bold text-slate-900">{student.rollNumber}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-gray-50">
-                  <span className="text-gray-500">Parent Name</span>
-                  <span className="font-medium">{student.parentName}</span>
+                <div className="flex justify-between items-center py-3 border-b border-slate-50">
+                  <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Parent Name</span>
+                  <span className="font-bold text-slate-900">{student.parentName}</span>
                 </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-gray-500">Portal Code</span>
-                  <Badge variant="secondary">{student.portalCode}</Badge>
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Portal Code</span>
+                  <Badge className="bg-slate-100 text-slate-600 border-none font-bold rounded-lg px-3 py-1">{student.portalCode}</Badge>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="rounded-3xl border-none shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-blue-600" /> Attendance
+            <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white p-8">
+              <CardHeader className="p-0 mb-8">
+                <CardTitle className="text-xl font-extrabold flex items-center gap-3 text-slate-900">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-primary" />
+                  </div>
+                  Attendance
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-4">
-                  <div className="text-5xl font-bold text-blue-600 mb-2">{student.attendance}%</div>
-                  <p className="text-gray-500 text-sm">Overall Attendance this Term</p>
+              <CardContent className="p-0">
+                <div className="text-center mb-8">
+                  <div className="text-6xl font-black text-primary mb-2 tracking-tighter">{student.attendance}%</div>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Term Attendance</p>
                 </div>
-                <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                  <div className="bg-blue-600 h-full" style={{ width: `${student.attendance}%` }} />
+                <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden shadow-inner">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${student.attendance}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="bg-primary h-full rounded-full shadow-lg shadow-primary/20" 
+                  />
                 </div>
+                <p className="text-center mt-6 text-slate-500 text-sm font-medium">
+                  {student.attendance >= 75 ? "Excellent attendance record!" : "Attendance needs improvement."}
+                </p>
               </CardContent>
             </Card>
           </div>
 
           {/* Middle Column: Performance & Results */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-10">
             <Tabs defaultValue="results" className="w-full">
-              <TabsList className="bg-white p-1 rounded-2xl shadow-sm mb-6">
-                <TabsTrigger value="results" className="rounded-xl px-8">Exam Results</TabsTrigger>
-                <TabsTrigger value="classwork" className="rounded-xl px-8">Class Work</TabsTrigger>
-                <TabsTrigger value="performance" className="rounded-xl px-8">Performance Chart</TabsTrigger>
+              <TabsList className="bg-white p-2 rounded-[1.5rem] shadow-2xl shadow-blue-900/5 mb-10 h-16 inline-flex border border-slate-100">
+                <TabsTrigger value="results" className="rounded-xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Exam Results</TabsTrigger>
+                <TabsTrigger value="classwork" className="rounded-xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Class Work</TabsTrigger>
+                <TabsTrigger value="performance" className="rounded-xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Performance Chart</TabsTrigger>
               </TabsList>
 
               <TabsContent value="results">
@@ -810,317 +961,480 @@ const AdminDashboard = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-slate-50 py-32">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            {currentUser.role === 'admin' ? 'Admin Control Panel' : 'Teacher Dashboard'}
+        <div className="mb-16">
+          <div className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-xs mb-4">
+            <div className="w-8 h-px bg-primary" />
+            {currentUser.role === 'admin' ? 'Administrative Control' : 'Faculty Access'}
+          </div>
+          <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none mb-4">
+            Management Portal
           </h1>
-          <p className="text-gray-600">Welcome back, {currentUser.name}. Manage school data and portal content.</p>
+          <p className="text-slate-500 text-lg font-medium max-w-2xl">
+            Welcome back, <span className="text-primary font-bold">{currentUser.name}</span>. You have access to manage school operations and student records.
+          </p>
         </div>
 
-        <Tabs defaultValue={canManageInfo ? "info" : canManageTeachers ? "teachers" : "students"} className="space-y-8">
-          <TabsList className="bg-white p-1 rounded-2xl shadow-sm overflow-x-auto flex-nowrap">
-            {canManageInfo && <TabsTrigger value="info" className="rounded-xl px-6">School Info</TabsTrigger>}
-            {canManageAnnouncements && <TabsTrigger value="announcements" className="rounded-xl px-6">Announcements</TabsTrigger>}
-            {canManageTeachers && <TabsTrigger value="teachers" className="rounded-xl px-6">Teachers</TabsTrigger>}
-            {canSeeStudentsTab && <TabsTrigger value="students" className="rounded-xl px-6">Students</TabsTrigger>}
-            {canManageClassWork && <TabsTrigger value="classwork" className="rounded-xl px-6">Class Work</TabsTrigger>}
-            {canManageDocuments && <TabsTrigger value="documents" className="rounded-xl px-6">Documents</TabsTrigger>}
+        <Tabs defaultValue={canManageInfo ? "info" : canManageTeachers ? "teachers" : "students"} className="space-y-12">
+          <TabsList className="bg-white p-2 rounded-[2rem] shadow-2xl shadow-blue-900/5 h-20 inline-flex border border-slate-100 overflow-x-auto max-w-full no-scrollbar">
+            {canManageInfo && <TabsTrigger value="info" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">School Profile</TabsTrigger>}
+            {canManageAnnouncements && <TabsTrigger value="announcements" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Announcements</TabsTrigger>}
+            {canManageTeachers && <TabsTrigger value="teachers" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Faculty</TabsTrigger>}
+            {canSeeStudentsTab && <TabsTrigger value="students" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Students</TabsTrigger>}
+            {canManageClassWork && <TabsTrigger value="classwork" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Classwork</TabsTrigger>}
+            {canManageDocuments && <TabsTrigger value="documents" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Documents</TabsTrigger>}
           </TabsList>
 
           {/* School Info Tab */}
           {canManageInfo && (
             <TabsContent value="info">
-              {/* ... existing info content ... */}
-            <div className="space-y-8">
-              <Card className="rounded-3xl border-none shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5" /> General Settings</CardTitle>
-                  <CardDescription>Update the school's public profile and hero section.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">School Name</label>
-                      <Input 
-                        value={editingInfo?.name || ''} 
-                        onChange={e => setEditingInfo(prev => prev ? {...prev, name: e.target.value} : null)}
-                      />
+              <div className="space-y-10">
+                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
+                  <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
+                    <div>
+                      <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                          <Settings className="w-5 h-5 text-white" />
+                        </div>
+                        General Settings
+                      </CardTitle>
+                      <CardDescription className="text-slate-400 font-medium mt-1">Update the school's public profile and hero section.</CardDescription>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Logo URL</label>
-                      <Input 
-                        value={editingInfo?.logoUrl || ''} 
-                        onChange={e => setEditingInfo(prev => prev ? {...prev, logoUrl: e.target.value} : null)}
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-medium">Hero Title</label>
-                      <Input 
-                        value={editingInfo?.heroTitle || ''} 
-                        onChange={e => setEditingInfo(prev => prev ? {...prev, heroTitle: e.target.value} : null)}
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-medium">Hero Subtitle</label>
-                      <Input 
-                        value={editingInfo?.heroSubtitle || ''} 
-                        onChange={e => setEditingInfo(prev => prev ? {...prev, heroSubtitle: e.target.value} : null)}
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-medium">Hero Images (One per line)</label>
-                      <textarea 
-                        className="w-full min-h-[100px] p-3 rounded-xl border border-gray-200 text-sm"
-                        value={editingInfo?.heroImages?.join('\n') || ''}
-                        onChange={e => setEditingInfo(prev => prev ? {...prev, heroImages: e.target.value.split('\n').filter(s => s.trim())} : null)}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-3xl border-none shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Users className="w-5 h-5" /> Faculty Management</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    {editingInfo?.faculty?.map((f, idx) => (
-                      <div key={f.id} className="grid md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-2xl relative group">
-                        <Input placeholder="Name" value={f.name} onChange={e => {
-                          const faculty = [...(editingInfo.faculty || [])];
-                          faculty[idx].name = e.target.value;
-                          setEditingInfo({...editingInfo, faculty});
-                        }} />
-                        <Input placeholder="Role" value={f.role} onChange={e => {
-                          const faculty = [...(editingInfo.faculty || [])];
-                          faculty[idx].role = e.target.value;
-                          setEditingInfo({...editingInfo, faculty});
-                        }} />
-                        <Input placeholder="Image URL" value={f.imageUrl} onChange={e => {
-                          const faculty = [...(editingInfo.faculty || [])];
-                          faculty[idx].imageUrl = e.target.value;
-                          setEditingInfo({...editingInfo, faculty});
-                        }} />
-                        <button 
-                          onClick={() => {
-                            const faculty = editingInfo.faculty?.filter((_, i) => i !== idx);
-                            setEditingInfo({...editingInfo, faculty});
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                    <Button variant="outline" className="w-full" onClick={() => {
-                      setEditingInfo(prev => prev ? {
-                        ...prev, 
-                        faculty: [...(prev.faculty || []), { id: Math.random().toString(36).substr(2, 9), name: '', role: '', imageUrl: '' }]
-                      } : null);
-                    }}>
-                      <Plus className="w-4 h-4 mr-2" /> Add Faculty Member
+                    <Button onClick={handleUpdateInfo} className="rounded-xl bg-primary hover:bg-blue-800 font-bold px-8 h-12">
+                      Save Changes
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-3xl border-none shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Building2 className="w-5 h-5" /> Facilities Management</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    {editingInfo?.facilities?.map((f, idx) => (
-                      <div key={f.id} className="grid md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-2xl relative group">
-                        <Input placeholder="Title" value={f.title} onChange={e => {
-                          const facilities = [...(editingInfo.facilities || [])];
-                          facilities[idx].title = e.target.value;
-                          setEditingInfo({...editingInfo, facilities});
-                        }} />
-                        <Input placeholder="Image URL" value={f.imageUrl} onChange={e => {
-                          const facilities = [...(editingInfo.facilities || [])];
-                          facilities[idx].imageUrl = e.target.value;
-                          setEditingInfo({...editingInfo, facilities});
-                        }} />
-                        <textarea 
-                          className="w-full md:col-span-2 p-3 rounded-xl border border-gray-200 text-sm"
-                          placeholder="Description"
-                          value={f.description}
-                          onChange={e => {
-                            const facilities = [...(editingInfo.facilities || [])];
-                            facilities[idx].description = e.target.value;
-                            setEditingInfo({...editingInfo, facilities});
-                          }}
+                  <CardContent className="p-10 space-y-10">
+                    <div className="grid md:grid-cols-2 gap-10">
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">School Name</label>
+                        <Input 
+                          value={editingInfo?.name || ''} 
+                          onChange={e => setEditingInfo(prev => prev ? {...prev, name: e.target.value} : null)}
+                          className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium"
                         />
-                        <button 
-                          onClick={() => {
-                            const facilities = editingInfo.facilities?.filter((_, i) => i !== idx);
-                            setEditingInfo({...editingInfo, facilities});
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
                       </div>
-                    ))}
-                    <Button variant="outline" className="w-full" onClick={() => {
-                      setEditingInfo(prev => prev ? {
-                        ...prev, 
-                        facilities: [...(prev.facilities || []), { id: Math.random().toString(36).substr(2, 9), title: '', description: '', imageUrl: '' }]
-                      } : null);
-                    }}>
-                      <Plus className="w-4 h-4 mr-2" /> Add Facility
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Logo URL</label>
+                        <Input 
+                          value={editingInfo?.logoUrl || ''} 
+                          onChange={e => setEditingInfo(prev => prev ? {...prev, logoUrl: e.target.value} : null)}
+                          className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium"
+                        />
+                      </div>
+                      <div className="space-y-3 md:col-span-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Hero Title</label>
+                        <Input 
+                          value={editingInfo?.heroTitle || ''} 
+                          onChange={e => setEditingInfo(prev => prev ? {...prev, heroTitle: e.target.value} : null)}
+                          className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium"
+                        />
+                      </div>
+                      <div className="space-y-3 md:col-span-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Hero Subtitle</label>
+                        <Input 
+                          value={editingInfo?.heroSubtitle || ''} 
+                          onChange={e => setEditingInfo(prev => prev ? {...prev, heroSubtitle: e.target.value} : null)}
+                          className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium"
+                        />
+                      </div>
+                      <div className="space-y-3 md:col-span-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Hero Images (One per line)</label>
+                        <textarea 
+                          className="w-full min-h-[150px] p-5 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium text-sm leading-relaxed"
+                          value={editingInfo?.heroImages?.join('\n') || ''}
+                          onChange={e => setEditingInfo(prev => prev ? {...prev, heroImages: e.target.value.split('\n').filter(s => s.trim())} : null)}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
+                  <div className="bg-slate-900 p-8 text-white">
+                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <Users className="w-5 h-5 text-white" />
+                      </div>
+                      Faculty Management
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 font-medium mt-1">Manage the school's teaching staff and their public profiles.</CardDescription>
+                  </div>
+                  <CardContent className="p-10 space-y-8">
+                    <div className="space-y-6">
+                      {editingInfo?.faculty?.map((f, idx) => (
+                        <div key={f.id} className="grid md:grid-cols-3 gap-6 p-8 bg-slate-50 rounded-[2rem] relative group border border-slate-100 transition-all hover:bg-white hover:shadow-xl hover:shadow-blue-900/5">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
+                            <Input placeholder="Name" value={f.name} onChange={e => {
+                              const faculty = [...(editingInfo.faculty || [])];
+                              faculty[idx].name = e.target.value;
+                              setEditingInfo({...editingInfo, faculty});
+                            }} className="h-12 rounded-xl border-slate-200 bg-white" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Role / Position</label>
+                            <Input placeholder="Role" value={f.role} onChange={e => {
+                              const faculty = [...(editingInfo.faculty || [])];
+                              faculty[idx].role = e.target.value;
+                              setEditingInfo({...editingInfo, faculty});
+                            }} className="h-12 rounded-xl border-slate-200 bg-white" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Qualification</label>
+                            <Input placeholder="e.g. M.A., B.Ed." value={f.qualification || ''} onChange={e => {
+                              const faculty = [...(editingInfo.faculty || [])];
+                              faculty[idx].qualification = e.target.value;
+                              setEditingInfo({...editingInfo, faculty});
+                            }} className="h-12 rounded-xl border-slate-200 bg-white" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Profile Image URL</label>
+                            <Input placeholder="Image URL" value={f.imageUrl} onChange={e => {
+                              const faculty = [...(editingInfo.faculty || [])];
+                              faculty[idx].imageUrl = e.target.value;
+                              setEditingInfo({...editingInfo, faculty});
+                            }} className="h-12 rounded-xl border-slate-200 bg-white" />
+                          </div>
+                          <button 
+                            onClick={() => {
+                              const faculty = editingInfo.faculty?.filter((_, i) => i !== idx);
+                              setEditingInfo({...editingInfo, faculty});
+                            }}
+                            className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:scale-110"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full h-14 rounded-2xl border-dashed border-2 border-slate-200 hover:border-primary hover:text-primary hover:bg-blue-50 transition-all font-bold text-slate-500"
+                      onClick={() => {
+                        setEditingInfo(prev => prev ? {
+                          ...prev, 
+                          faculty: [...(prev.faculty || []), { id: Math.random().toString(36).substr(2, 9), name: '', role: '', imageUrl: '', qualification: '' }]
+                        } : null);
+                      }}
+                    >
+                      <Plus className="w-5 h-5 mr-2" /> Add Faculty Member
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              <Card className="rounded-3xl border-none shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><MapPin className="w-5 h-5" /> Footer Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Address</label>
-                      <Input 
-                        value={editingInfo?.footer?.address || ''} 
-                        onChange={e => setEditingInfo(prev => prev ? {...prev, footer: {...prev.footer, address: e.target.value}} : null)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Email</label>
-                      <Input 
-                        value={editingInfo?.footer?.email || ''} 
-                        onChange={e => setEditingInfo(prev => prev ? {...prev, footer: {...prev.footer, email: e.target.value}} : null)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Phone</label>
-                      <Input 
-                        value={editingInfo?.footer?.phone || ''} 
-                        onChange={e => setEditingInfo(prev => prev ? {...prev, footer: {...prev.footer, phone: e.target.value}} : null)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">About Text</label>
-                      <Input 
-                        value={editingInfo?.footer?.about || ''} 
-                        onChange={e => setEditingInfo(prev => prev ? {...prev, footer: {...prev.footer, about: e.target.value}} : null)}
-                      />
-                    </div>
+                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
+                  <div className="bg-slate-900 p-8 text-white">
+                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <Building2 className="w-5 h-5 text-white" />
+                      </div>
+                      Facilities Management
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 font-medium mt-1">Showcase the school's infrastructure and amenities.</CardDescription>
                   </div>
-                </CardContent>
-              </Card>
+                  <CardContent className="p-10 space-y-8">
+                    <div className="grid md:grid-cols-2 gap-8">
+                      {editingInfo?.facilities?.map((f, idx) => (
+                        <div key={f.id} className="p-8 bg-slate-50 rounded-[2rem] relative group border border-slate-100 transition-all hover:bg-white hover:shadow-xl hover:shadow-blue-900/5">
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Facility Title</label>
+                              <Input placeholder="Title" value={f.title} onChange={e => {
+                                const facilities = [...(editingInfo.facilities || [])];
+                                facilities[idx].title = e.target.value;
+                                setEditingInfo({...editingInfo, facilities});
+                              }} className="h-12 rounded-xl border-slate-200 bg-white font-bold" />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Image URL</label>
+                              <Input placeholder="Image URL" value={f.imageUrl} onChange={e => {
+                                const facilities = [...(editingInfo.facilities || [])];
+                                facilities[idx].imageUrl = e.target.value;
+                                setEditingInfo({...editingInfo, facilities});
+                              }} className="h-12 rounded-xl border-slate-200 bg-white" />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Description</label>
+                              <textarea 
+                                className="w-full min-h-[100px] p-4 rounded-xl border border-slate-200 bg-white text-sm font-medium"
+                                placeholder="Description"
+                                value={f.description}
+                                onChange={e => {
+                                  const facilities = [...(editingInfo.facilities || [])];
+                                  facilities[idx].description = e.target.value;
+                                  setEditingInfo({...editingInfo, facilities});
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => {
+                              const facilities = editingInfo.facilities?.filter((_, i) => i !== idx);
+                              setEditingInfo({...editingInfo, facilities});
+                            }}
+                            className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:scale-110"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full h-14 rounded-2xl border-dashed border-2 border-slate-200 hover:border-primary hover:text-primary hover:bg-blue-50 transition-all font-bold text-slate-500"
+                      onClick={() => {
+                        setEditingInfo(prev => prev ? {
+                          ...prev, 
+                          facilities: [...(prev.facilities || []), { id: Math.random().toString(36).substr(2, 9), title: '', description: '', imageUrl: '' }]
+                        } : null);
+                      }}
+                    >
+                      <Plus className="w-5 h-5 mr-2" /> Add Facility
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <div className="flex justify-end">
-                <Button onClick={handleUpdateInfo} className="bg-blue-600 rounded-full px-8 h-12 shadow-lg shadow-blue-600/20">
-                  <Save className="w-4 h-4 mr-2" /> Save All Settings
-                </Button>
+                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
+                  <div className="bg-slate-900 p-8 text-white">
+                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <MapPin className="w-5 h-5 text-white" />
+                      </div>
+                      Footer Information
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 font-medium mt-1">Update contact details and footer content.</CardDescription>
+                  </div>
+                  <CardContent className="p-10 space-y-8">
+                    <div className="grid md:grid-cols-2 gap-10">
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Address</label>
+                        <Input 
+                          value={editingInfo?.footer?.address || ''} 
+                          onChange={e => setEditingInfo(prev => prev ? {...prev, footer: {...prev.footer, address: e.target.value}} : null)}
+                          className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium"
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Email</label>
+                        <Input 
+                          value={editingInfo?.footer?.email || ''} 
+                          onChange={e => setEditingInfo(prev => prev ? {...prev, footer: {...prev.footer, email: e.target.value}} : null)}
+                          className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium"
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Phone</label>
+                        <Input 
+                          value={editingInfo?.footer?.phone || ''} 
+                          onChange={e => setEditingInfo(prev => prev ? {...prev, footer: {...prev.footer, phone: e.target.value}} : null)}
+                          className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium"
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">About Text</label>
+                        <Input 
+                          value={editingInfo?.footer?.about || ''} 
+                          onChange={e => setEditingInfo(prev => prev ? {...prev, footer: {...prev.footer, about: e.target.value}} : null)}
+                          className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="flex justify-center pt-8">
+                  <Button onClick={handleUpdateInfo} className="bg-primary hover:bg-blue-800 text-white rounded-[2rem] px-12 h-20 shadow-2xl shadow-primary/20 font-black text-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-4">
+                    <Save className="w-6 h-6" /> Save All Settings
+                  </Button>
+                </div>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
           )}
 
           {/* Announcements Tab */}
           {canManageAnnouncements && (
             <TabsContent value="announcements">
-            <div className="grid lg:grid-cols-3 gap-8">
-              <Card className="rounded-3xl border-none shadow-sm h-fit">
-                <CardHeader><CardTitle>Add Announcement</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <Input 
-                    placeholder="Title" 
-                    value={newAnn.title} 
-                    onChange={e => setNewAnn({...newAnn, title: e.target.value})}
-                  />
-                  <textarea 
-                    className="w-full min-h-[100px] p-3 rounded-xl border border-gray-200 text-sm" 
-                    placeholder="Content"
-                    value={newAnn.content}
-                    onChange={e => setNewAnn({...newAnn, content: e.target.value})}
-                  />
-                  <select 
-                    className="w-full p-3 rounded-xl border border-gray-200 text-sm"
-                    value={newAnn.priority}
-                    onChange={e => setNewAnn({...newAnn, priority: e.target.value as any})}
-                  >
-                    <option value="low">Low Priority</option>
-                    <option value="medium">Medium Priority</option>
-                    <option value="high">High Priority</option>
-                  </select>
-                  <Button onClick={handleAddAnnouncement} className="w-full bg-blue-600">
-                    <Plus className="w-4 h-4 mr-2" /> Post Announcement
-                  </Button>
-                </CardContent>
-              </Card>
-              <div className="lg:col-span-2 space-y-4">
-                {announcements.map(ann => (
-                  <Card key={ann.id} className="rounded-2xl border-none shadow-sm">
-                    <CardContent className="p-4 flex justify-between items-center">
-                      <div>
-                        <h4 className="font-bold">{ann.title}</h4>
-                        <p className="text-xs text-gray-400">{new Date(ann.date).toLocaleDateString()}</p>
+              <div className="grid lg:grid-cols-3 gap-10">
+                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit sticky top-32">
+                  <div className="bg-slate-900 p-8 text-white">
+                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <Plus className="w-5 h-5 text-white" />
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => setConfirmDelete({ type: 'announcement', id: ann.id, title: ann.title })} className="text-red-500">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                      New Post
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 font-medium mt-1">Broadcast news to the entire school portal.</CardDescription>
+                  </div>
+                  <CardContent className="p-8 space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Title</label>
+                      <Input 
+                        placeholder="Announcement Title" 
+                        value={newAnn.title} 
+                        onChange={e => setNewAnn({...newAnn, title: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Content</label>
+                      <textarea 
+                        className="w-full min-h-[150px] p-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white transition-all text-sm font-medium leading-relaxed" 
+                        placeholder="Write your announcement here..."
+                        value={newAnn.content}
+                        onChange={e => setNewAnn({...newAnn, content: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Priority Level</label>
+                      <select 
+                        className="w-full h-12 px-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white transition-all text-sm font-bold appearance-none cursor-pointer"
+                        value={newAnn.priority}
+                        onChange={e => setNewAnn({...newAnn, priority: e.target.value as any})}
+                      >
+                        <option value="low">Low Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="high">High Priority</option>
+                      </select>
+                    </div>
+                    <Button onClick={handleAddAnnouncement} className="w-full h-14 bg-primary hover:bg-blue-800 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+                      Post Announcement
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="flex items-center justify-between mb-4 px-2">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Recent Announcements</h3>
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{announcements.length} Posts</div>
+                  </div>
+                  {announcements.length === 0 ? (
+                    <div className="bg-white rounded-[2.5rem] p-20 text-center border-2 border-dashed border-slate-100">
+                      <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Megaphone className="w-10 h-10 text-slate-300" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900 mb-2">No announcements yet</h4>
+                      <p className="text-slate-500">Create your first post to keep everyone informed.</p>
+                    </div>
+                  ) : (
+                    announcements.map(ann => (
+                      <Card key={ann.id} className="rounded-[2rem] border-none shadow-xl shadow-blue-900/5 bg-white overflow-hidden group hover:shadow-2xl transition-all border border-slate-50">
+                        <CardContent className="p-8 flex justify-between items-start gap-6">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                ann.priority === 'high' ? 'bg-red-100 text-red-600' : 
+                                ann.priority === 'medium' ? 'bg-amber-100 text-amber-600' : 
+                                'bg-emerald-100 text-emerald-600'
+                              }`}>
+                                {ann.priority} Priority
+                              </div>
+                              <span className="text-xs font-bold text-slate-400">
+                                {new Date(ann.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                              </span>
+                            </div>
+                            <h4 className="text-xl font-black text-slate-900 mb-3 group-hover:text-primary transition-colors">{ann.title}</h4>
+                            <p className="text-slate-500 font-medium leading-relaxed line-clamp-3">{ann.content}</p>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => setConfirmDelete({ type: 'announcement', id: ann.id, title: ann.title })} 
+                            className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
           )}
 
           {/* Students Tab */}
           {canSeeStudentsTab && (
             <TabsContent value="students">
-              <div className="grid lg:grid-cols-3 gap-8">
-                <Card className="rounded-3xl border-none shadow-sm h-fit">
-                  <CardHeader><CardTitle>{selectedStudent ? 'Edit Student' : 'Add Student'}</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    <Input 
-                      placeholder="Student Name" 
-                      value={newStudent.name || ''} 
-                      onChange={e => setNewStudent({...newStudent, name: e.target.value})}
-                      disabled={!!selectedStudent && !canManageStudentsFull}
-                    />
-                    <Input 
-                      placeholder="Portal Code (Unique)" 
-                      value={newStudent.portalCode || ''} 
-                      onChange={e => setNewStudent({...newStudent, portalCode: e.target.value})}
-                      disabled={!!selectedStudent}
-                    />
-                    <Input 
-                      placeholder="Class" 
-                      value={newStudent.class || ''} 
-                      onChange={e => setNewStudent({...newStudent, class: e.target.value})}
-                      disabled={!!selectedStudent && !canManageStudentsFull}
-                    />
-                    <Input 
-                      placeholder="Roll Number" 
-                      value={newStudent.rollNumber || ''} 
-                      onChange={e => setNewStudent({...newStudent, rollNumber: e.target.value})}
-                      disabled={!!selectedStudent && !canManageStudentsFull}
-                    />
-                    <Input 
-                      placeholder="Parent Name" 
-                      value={newStudent.parentName || ''} 
-                      onChange={e => setNewStudent({...newStudent, parentName: e.target.value})}
-                      disabled={!!selectedStudent && !canManageStudentsFull}
-                    />
-                    <Input 
-                      placeholder="Student Image URL" 
-                      value={newStudent.imageUrl || ''} 
-                      onChange={e => setNewStudent({...newStudent, imageUrl: e.target.value})}
-                      disabled={!!selectedStudent && !canManageStudentsFull}
-                    />
+              <div className="grid lg:grid-cols-3 gap-10">
+                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit sticky top-32">
+                  <div className="bg-slate-900 p-8 text-white">
+                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        {selectedStudent ? <Edit className="w-5 h-5 text-white" /> : <Plus className="w-5 h-5 text-white" />}
+                      </div>
+                      {selectedStudent ? 'Edit Student' : 'Add Student'}
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 font-medium mt-1">
+                      {selectedStudent ? 'Modify existing student record.' : 'Register a new student to the portal.'}
+                    </CardDescription>
+                  </div>
+                  <CardContent className="p-8 space-y-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Attendance %</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Student Name</label>
+                      <Input 
+                        placeholder="Full Name" 
+                        value={newStudent.name || ''} 
+                        onChange={e => setNewStudent({...newStudent, name: e.target.value})}
+                        disabled={!!selectedStudent && !canManageStudentsFull}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Portal Code (Unique)</label>
+                      <Input 
+                        placeholder="Unique Code" 
+                        value={newStudent.portalCode || ''} 
+                        onChange={e => setNewStudent({...newStudent, portalCode: e.target.value})}
+                        disabled={!!selectedStudent}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Class</label>
+                        <Input 
+                          placeholder="e.g. 10-A" 
+                          value={newStudent.class || ''} 
+                          onChange={e => setNewStudent({...newStudent, class: e.target.value})}
+                          disabled={!!selectedStudent && !canManageStudentsFull}
+                          className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Roll No.</label>
+                        <Input 
+                          placeholder="Roll No." 
+                          value={newStudent.rollNumber || ''} 
+                          onChange={e => setNewStudent({...newStudent, rollNumber: e.target.value})}
+                          disabled={!!selectedStudent && !canManageStudentsFull}
+                          className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Parent Name</label>
+                      <Input 
+                        placeholder="Parent/Guardian Name" 
+                        value={newStudent.parentName || ''} 
+                        onChange={e => setNewStudent({...newStudent, parentName: e.target.value})}
+                        disabled={!!selectedStudent && !canManageStudentsFull}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Image URL</label>
+                      <Input 
+                        placeholder="Profile Photo URL" 
+                        value={newStudent.imageUrl || ''} 
+                        onChange={e => setNewStudent({...newStudent, imageUrl: e.target.value})}
+                        disabled={!!selectedStudent && !canManageStudentsFull}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-medium"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Attendance %</label>
                       <Input 
                         type="number"
                         value={isNaN(newStudent.attendance as number) ? 0 : newStudent.attendance} 
@@ -1129,48 +1443,59 @@ const AdminDashboard = ({
                           setNewStudent({...newStudent, attendance: isNaN(val) ? 0 : val});
                         }}
                         disabled={!!selectedStudent && !canManageStudentsFull}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
                       />
                     </div>
                     
                     {canManageResults && (
-                      <div className="pt-4 border-t space-y-4">
-                        <h4 className="text-sm font-bold">Exam Results</h4>
-                        {newStudent.results?.map((res, idx) => (
-                          <div key={idx} className="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded-lg relative group">
-                            <Input placeholder="Subject" value={res.subject} onChange={e => {
-                              const results = [...(newStudent.results || [])];
-                              results[idx].subject = e.target.value;
-                              setNewStudent({...newStudent, results});
-                            }} />
-                            <Input type="number" placeholder="Score" value={isNaN(res.score) ? '' : res.score} onChange={e => {
-                              const results = [...(newStudent.results || [])];
-                              const val = e.target.value === '' ? 0 : parseInt(e.target.value);
-                              results[idx].score = isNaN(val) ? 0 : val;
-                              setNewStudent({...newStudent, results});
-                            }} />
-                            <Input placeholder="Term" value={res.term} onChange={e => {
-                              const results = [...(newStudent.results || [])];
-                              results[idx].term = e.target.value;
-                              setNewStudent({...newStudent, results});
-                            }} />
-                            <Input type="number" placeholder="Total" value={isNaN(res.total) ? '' : res.total} onChange={e => {
-                              const results = [...(newStudent.results || [])];
-                              const val = e.target.value === '' ? 100 : parseInt(e.target.value);
-                              results[idx].total = isNaN(val) ? 100 : val;
-                              setNewStudent({...newStudent, results});
-                            }} />
-                            <button 
-                              onClick={() => {
-                                const results = newStudent.results?.filter((_, i) => i !== idx);
-                                setNewStudent({...newStudent, results});
-                              }}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                        <Button variant="outline" size="sm" className="w-full" onClick={() => {
+                      <div className="pt-6 border-t border-slate-100 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-black uppercase tracking-widest text-slate-900">Exam Results</h4>
+                          <Badge variant="outline" className="text-[10px] font-bold">{newStudent.results?.length || 0} Records</Badge>
+                        </div>
+                        <div className="space-y-3">
+                          {newStudent.results?.map((res, idx) => (
+                            <div key={idx} className="p-4 bg-slate-50 rounded-2xl relative group border border-slate-100">
+                              <div className="grid grid-cols-2 gap-3">
+                                <Input placeholder="Subject" value={res.subject} onChange={e => {
+                                  const results = [...(newStudent.results || [])];
+                                  results[idx].subject = e.target.value;
+                                  setNewStudent({...newStudent, results});
+                                }} className="h-10 rounded-lg border-slate-200 bg-white text-xs font-bold" />
+                                <Input placeholder="Term" value={res.term} onChange={e => {
+                                  const results = [...(newStudent.results || [])];
+                                  results[idx].term = e.target.value;
+                                  setNewStudent({...newStudent, results});
+                                }} className="h-10 rounded-lg border-slate-200 bg-white text-xs font-bold" />
+                                <div className="flex items-center gap-2">
+                                  <Input type="number" placeholder="Score" value={isNaN(res.score) ? '' : res.score} onChange={e => {
+                                    const results = [...(newStudent.results || [])];
+                                    const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                    results[idx].score = isNaN(val) ? 0 : val;
+                                    setNewStudent({...newStudent, results});
+                                  }} className="h-10 rounded-lg border-slate-200 bg-white text-xs font-bold" />
+                                  <span className="text-slate-300 font-bold">/</span>
+                                  <Input type="number" placeholder="Total" value={isNaN(res.total) ? '' : res.total} onChange={e => {
+                                    const results = [...(newStudent.results || [])];
+                                    const val = e.target.value === '' ? 100 : parseInt(e.target.value);
+                                    results[idx].total = isNaN(val) ? 100 : val;
+                                    setNewStudent({...newStudent, results});
+                                  }} className="h-10 rounded-lg border-slate-200 bg-white text-xs font-bold" />
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => {
+                                  const results = newStudent.results?.filter((_, i) => i !== idx);
+                                  setNewStudent({...newStudent, results});
+                                }}
+                                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <Button variant="outline" size="sm" className="w-full h-10 rounded-xl border-dashed border-2 border-slate-200 hover:border-primary hover:text-primary hover:bg-blue-50 transition-all font-bold text-slate-500" onClick={() => {
                           setNewStudent({...newStudent, results: [...(newStudent.results || []), { subject: '', score: 0, total: 100, term: 'Final' }]});
                         }}>
                           <Plus className="w-4 h-4 mr-2" /> Add Result
@@ -1178,72 +1503,86 @@ const AdminDashboard = ({
                       </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-3 pt-4">
                       {selectedStudent && (
-                        <Button variant="outline" className="flex-1" onClick={() => {
+                        <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200" onClick={() => {
                           setSelectedStudent(null);
                           setNewStudent({ name: '', portalCode: '', class: '', results: [] });
                         }}>Cancel</Button>
                       )}
-                      <Button onClick={handleAddStudent} className="flex-1 bg-blue-600">
+                      <Button onClick={handleAddStudent} className="flex-1 h-12 bg-primary hover:bg-blue-800 rounded-xl font-black shadow-lg shadow-primary/20 transition-all">
                         {selectedStudent ? <Save className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                        {selectedStudent ? 'Update' : 'Add'} Student
+                        {selectedStudent ? 'Update' : 'Register'}
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
 
-                <div className="lg:col-span-2">
-                  <Card className="rounded-3xl border-none shadow-sm overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Student</TableHead>
-                          <TableHead>Class</TableHead>
-                          <TableHead>Code</TableHead>
-                          <TableHead>Last Edited By</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {students.map(s => (
-                          <TableRow key={s.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600">
-                                  {s.imageUrl ? <img src={s.imageUrl} className="w-full h-full rounded-full object-cover" /> : s.name[0]}
-                                </div>
-                                <div>
-                                  <div className="font-medium">{s.name}</div>
-                                  <div className="text-xs text-gray-400">Roll: {s.rollNumber}</div>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>{s.class}</TableCell>
-                            <TableCell><Badge variant="outline">{s.portalCode}</Badge></TableCell>
-                            <TableCell>
-                              <div className="text-xs text-gray-500">
-                                {s.lastEditedBy || 'System'}
-                                {s.lastEditedAt && <div className="text-[10px] opacity-60">{new Date(s.lastEditedAt).toLocaleDateString()}</div>}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => {
-                                  setSelectedStudent(s);
-                                  setNewStudent(s);
-                                }}>
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => setConfirmDelete({ type: 'student', id: s.portalCode, title: s.name })} className="text-red-500">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                <div className="lg:col-span-2 space-y-6">
+                  <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden border border-slate-50">
+                    <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                      <h3 className="text-xl font-black text-slate-900 tracking-tight">Student Directory</h3>
+                      <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{students.length} Students Enrolled</div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="hover:bg-transparent border-slate-50">
+                            <TableHead className="px-8 py-6 font-black text-slate-400 uppercase tracking-widest text-[10px]">Student Details</TableHead>
+                            <TableHead className="py-6 font-black text-slate-400 uppercase tracking-widest text-[10px]">Class</TableHead>
+                            <TableHead className="py-6 font-black text-slate-400 uppercase tracking-widest text-[10px]">Portal Access</TableHead>
+                            <TableHead className="py-6 font-black text-slate-400 uppercase tracking-widest text-[10px]">Last Update</TableHead>
+                            <TableHead className="px-8 py-6 text-right font-black text-slate-400 uppercase tracking-widest text-[10px]">Actions</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {students.map(s => (
+                            <TableRow key={s.id} className="group hover:bg-slate-50/50 transition-colors border-slate-50">
+                              <TableCell className="px-8 py-6">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center font-black text-primary overflow-hidden border-2 border-white shadow-sm">
+                                    {s.imageUrl ? <img src={s.imageUrl} className="w-full h-full object-cover" /> : s.name[0]}
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-slate-900">{s.name}</div>
+                                    <div className="text-xs font-bold text-slate-400">Roll No: {s.rollNumber}</div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-6">
+                                <div className="inline-flex px-3 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-black uppercase tracking-wider">
+                                  {s.class}
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-6">
+                                <Badge variant="outline" className="rounded-lg border-slate-200 font-mono font-bold text-primary bg-white shadow-sm">
+                                  {s.portalCode}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="py-6">
+                                <div className="space-y-1">
+                                  <div className="text-xs font-bold text-slate-600">{s.lastEditedBy || 'System'}</div>
+                                  {s.lastEditedAt && <div className="text-[10px] font-bold text-slate-400">{new Date(s.lastEditedAt).toLocaleDateString()}</div>}
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-8 py-6 text-right">
+                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                  <Button variant="ghost" size="icon" onClick={() => {
+                                    setSelectedStudent(s);
+                                    setNewStudent(s);
+                                  }} className="w-9 h-9 rounded-xl text-slate-400 hover:text-primary hover:bg-blue-50">
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" onClick={() => setConfirmDelete({ type: 'student', id: s.portalCode, title: s.name })} className="w-9 h-9 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </Card>
                 </div>
               </div>
@@ -1253,70 +1592,94 @@ const AdminDashboard = ({
           {/* Teachers Tab */}
           {canManageTeachers && (
             <TabsContent value="teachers">
-              <div className="grid lg:grid-cols-3 gap-8">
-                <Card className="rounded-3xl border-none shadow-sm h-fit">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><UserPlus className="w-5 h-5" /> Add Teacher</CardTitle>
-                    <CardDescription>Teachers can manage student results and class work.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Input 
-                      placeholder="Teacher Name" 
-                      value={newTeacher.name} 
-                      onChange={e => setNewTeacher({...newTeacher, name: e.target.value})}
-                    />
-                    <Input 
-                      placeholder="Email Address" 
-                      value={newTeacher.email} 
-                      onChange={e => setNewTeacher({...newTeacher, email: e.target.value})}
-                    />
-                    <Input 
-                      placeholder="Password" 
-                      type="password"
-                      value={newTeacher.password} 
-                      onChange={e => setNewTeacher({...newTeacher, password: e.target.value})}
-                    />
-                    <Input 
-                      placeholder="Subject" 
-                      value={newTeacher.subject} 
-                      onChange={e => setNewTeacher({...newTeacher, subject: e.target.value})}
-                    />
+              <div className="grid lg:grid-cols-3 gap-10">
+                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit sticky top-32">
+                  <div className="bg-slate-900 p-8 text-white">
+                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <UserPlus className="w-5 h-5 text-white" />
+                      </div>
+                      Add Teacher
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 font-medium mt-1">Register a new faculty member with specific access privileges.</CardDescription>
+                  </div>
+                  <CardContent className="p-8 space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
+                      <Input 
+                        placeholder="Teacher Name" 
+                        value={newTeacher.name} 
+                        onChange={e => setNewTeacher({...newTeacher, name: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Email Address</label>
+                      <Input 
+                        placeholder="Email Address" 
+                        value={newTeacher.email} 
+                        onChange={e => setNewTeacher({...newTeacher, email: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Portal Password</label>
+                      <Input 
+                        placeholder="Password" 
+                        type="password"
+                        value={newTeacher.password} 
+                        onChange={e => setNewTeacher({...newTeacher, password: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Subject Expertise</label>
+                      <Input 
+                        placeholder="Subject" 
+                        value={newTeacher.subject} 
+                        onChange={e => setNewTeacher({...newTeacher, subject: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
                     
-                    <div className="space-y-3 pt-4 border-t">
-                      <h4 className="text-sm font-bold">Privileges</h4>
-                      <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <div className="space-y-4 pt-6 border-t border-slate-100">
+                      <h4 className="text-xs font-black uppercase tracking-widest text-slate-900">Access Privileges</h4>
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-white hover:border-primary transition-all group">
                           <input 
                             type="checkbox" 
+                            className="w-5 h-5 rounded-lg border-slate-300 text-primary focus:ring-primary"
                             checked={newTeacher.privileges?.results} 
                             onChange={e => setNewTeacher({
                               ...newTeacher, 
                               privileges: { ...newTeacher.privileges!, results: e.target.checked }
                             })}
                           />
-                          Manage Exam Results
+                          <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900">Manage Exam Results</span>
                         </label>
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <label className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-white hover:border-primary transition-all group">
                           <input 
                             type="checkbox" 
+                            className="w-5 h-5 rounded-lg border-slate-300 text-primary focus:ring-primary"
                             checked={newTeacher.privileges?.classwork} 
                             onChange={e => setNewTeacher({
                               ...newTeacher, 
                               privileges: { ...newTeacher.privileges!, classwork: e.target.checked }
                             })}
                           />
-                          Manage Class Work
+                          <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900">Manage Class Work</span>
                         </label>
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <label className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-white hover:border-primary transition-all group">
                           <input 
                             type="checkbox" 
+                            className="w-5 h-5 rounded-lg border-slate-300 text-primary focus:ring-primary"
                             checked={newTeacher.privileges?.students} 
                             onChange={e => setNewTeacher({
                               ...newTeacher, 
                               privileges: { ...newTeacher.privileges!, students: e.target.checked }
                             })}
                           />
-                          Manage Student Profiles
+                          <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900">Manage Student Profiles</span>
                         </label>
                       </div>
                     </div>
@@ -1340,36 +1703,58 @@ const AdminDashboard = ({
                         toast.error("Failed to add teacher. Please check your connection.");
                         console.error(err);
                       }
-                    }} className="w-full bg-blue-600">
-                      <Plus className="w-4 h-4 mr-2" /> Add Teacher
+                    }} className="w-full h-14 bg-primary hover:bg-blue-800 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+                      <Plus className="w-5 h-5 mr-2" /> Add Teacher
                     </Button>
                   </CardContent>
                 </Card>
-                <div className="lg:col-span-2 space-y-4">
-                  {teachers.map(t => (
-                    <Card key={t.id} className="rounded-2xl border-none shadow-sm">
-                      <CardContent className="p-4 flex justify-between items-center">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                            <User className="text-blue-600 w-5 h-5" />
+
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="flex items-center justify-between mb-4 px-2">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Faculty Directory</h3>
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{teachers.length} Accounts</div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {teachers.map(t => (
+                      <Card key={t.id} className="rounded-[2.5rem] border-none shadow-xl shadow-blue-900/5 bg-white overflow-hidden group hover:shadow-2xl transition-all border border-slate-50">
+                        <CardContent className="p-8">
+                          <div className="flex justify-between items-start mb-6">
+                            <div className="flex items-center gap-4">
+                              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border-2 border-white shadow-sm">
+                                <User className="w-7 h-7" />
+                              </div>
+                              <div>
+                                <h4 className="text-xl font-black text-slate-900 tracking-tight">{t.name}</h4>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.subject} Specialist</p>
+                              </div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => setConfirmDelete({ type: 'teacher', id: t.id, title: t.name })} 
+                              className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </Button>
                           </div>
-                          <div>
-                            <h4 className="font-bold">{t.name}</h4>
-                            <p className="text-xs text-gray-500">{t.email} • {t.subject}</p>
-                            <p className="text-[10px] text-blue-600 font-mono mt-1 bg-blue-50 px-2 py-0.5 rounded w-fit">Pass: {t.password}</p>
-                            <div className="flex gap-2 mt-1">
-                              {t.privileges?.results && <Badge variant="secondary" className="text-[10px]">Results</Badge>}
-                              {t.privileges?.classwork && <Badge variant="secondary" className="text-[10px]">Classwork</Badge>}
-                              {t.privileges?.students && <Badge variant="secondary" className="text-[10px]">Students</Badge>}
+                          
+                          <div className="space-y-4">
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Contact & Access</div>
+                              <div className="text-sm font-bold text-slate-700 mb-1">{t.email}</div>
+                              <div className="inline-flex px-2 py-0.5 rounded bg-blue-100 text-primary font-mono text-[10px] font-black">PASS: {t.password}</div>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-2">
+                              {t.privileges?.results && <Badge className="rounded-lg bg-emerald-50 text-emerald-600 border-emerald-100 font-black text-[10px] uppercase tracking-wider">Results</Badge>}
+                              {t.privileges?.classwork && <Badge className="rounded-lg bg-blue-50 text-primary border-blue-100 font-black text-[10px] uppercase tracking-wider">Classwork</Badge>}
+                              {t.privileges?.students && <Badge className="rounded-lg bg-purple-50 text-purple-600 border-purple-100 font-black text-[10px] uppercase tracking-wider">Students</Badge>}
                             </div>
                           </div>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={() => setConfirmDelete({ type: 'teacher', id: t.id, title: t.name })} className="text-red-500">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -1378,53 +1763,107 @@ const AdminDashboard = ({
           {/* Class Work Tab */}
           {canManageClassWork && (
             <TabsContent value="classwork">
-              <div className="grid lg:grid-cols-3 gap-8">
-                <Card className="rounded-3xl border-none shadow-sm h-fit">
-                  <CardHeader><CardTitle>Post Class Work</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    <Input 
-                      placeholder="Class (e.g. 10-A)" 
-                      value={newWork.className} 
-                      onChange={e => setNewWork({...newWork, className: e.target.value})}
-                    />
-                    <Input 
-                      placeholder="Subject" 
-                      value={newWork.subject} 
-                      onChange={e => setNewWork({...newWork, subject: e.target.value})}
-                    />
-                    <Input 
-                      placeholder="Topic" 
-                      value={newWork.topic} 
-                      onChange={e => setNewWork({...newWork, topic: e.target.value})}
-                    />
-                    <textarea 
-                      className="w-full min-h-[100px] p-3 rounded-xl border border-gray-200 text-sm" 
-                      placeholder="Description"
-                      value={newWork.description}
-                      onChange={e => setNewWork({...newWork, description: e.target.value})}
-                    />
-                    <Button onClick={handleAddClassWork} className="w-full bg-blue-600">
-                      <Plus className="w-4 h-4 mr-2" /> Post Work
+              <div className="grid lg:grid-cols-3 gap-10">
+                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit sticky top-32">
+                  <div className="bg-slate-900 p-8 text-white">
+                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <BookOpen className="w-5 h-5 text-white" />
+                      </div>
+                      Post Work
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 font-medium mt-1">Assign new tasks or study materials to specific classes.</CardDescription>
+                  </div>
+                  <CardContent className="p-8 space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Class</label>
+                        <Input 
+                          placeholder="e.g. 10-A" 
+                          value={newWork.className} 
+                          onChange={e => setNewWork({...newWork, className: e.target.value})}
+                          className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Subject</label>
+                        <Input 
+                          placeholder="Subject" 
+                          value={newWork.subject} 
+                          onChange={e => setNewWork({...newWork, subject: e.target.value})}
+                          className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Topic / Title</label>
+                      <Input 
+                        placeholder="What are they learning?" 
+                        value={newWork.topic} 
+                        onChange={e => setNewWork({...newWork, topic: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Instructions</label>
+                      <textarea 
+                        className="w-full min-h-[150px] p-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white transition-all text-sm font-medium leading-relaxed" 
+                        placeholder="Detailed instructions for the students..."
+                        value={newWork.description}
+                        onChange={e => setNewWork({...newWork, description: e.target.value})}
+                      />
+                    </div>
+                    <Button onClick={handleAddClassWork} className="w-full h-14 bg-primary hover:bg-blue-800 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+                      <Plus className="w-5 h-5 mr-2" /> Post Work
                     </Button>
                   </CardContent>
                 </Card>
-                <div className="lg:col-span-2 space-y-4">
-                  {classWork.map(cw => (
-                    <Card key={cw.id} className="rounded-2xl border-none shadow-sm">
-                      <CardContent className="p-4 flex justify-between items-center">
-                        <div>
-                          <h4 className="font-bold">{cw.subject} - {cw.className}</h4>
-                          <p className="text-sm text-gray-500">{cw.topic}</p>
-                          <div className="text-[10px] text-gray-400 mt-1">
-                            Added by: {cw.lastEditedBy || 'System'}
+
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="flex items-center justify-between mb-4 px-2">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Assigned Work</h3>
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{classWork.length} Assignments</div>
+                  </div>
+                  {classWork.length === 0 ? (
+                    <div className="bg-white rounded-[2.5rem] p-20 text-center border-2 border-dashed border-slate-100">
+                      <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <BookOpen className="w-10 h-10 text-slate-300" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900 mb-2">No work assigned</h4>
+                      <p className="text-slate-500">Start by posting the first assignment for your students.</p>
+                    </div>
+                  ) : (
+                    classWork.map(cw => (
+                      <Card key={cw.id} className="rounded-[2rem] border-none shadow-xl shadow-blue-900/5 bg-white overflow-hidden group hover:shadow-2xl transition-all border border-slate-50">
+                        <CardContent className="p-8 flex justify-between items-start gap-6">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="px-3 py-1 rounded-full bg-blue-50 text-primary text-[10px] font-black uppercase tracking-widest">
+                                {cw.className}
+                              </div>
+                              <div className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest">
+                                {cw.subject}
+                              </div>
+                            </div>
+                            <h4 className="text-xl font-black text-slate-900 mb-2 group-hover:text-primary transition-colors">{cw.topic}</h4>
+                            <p className="text-slate-500 font-medium leading-relaxed line-clamp-2 mb-4">{cw.description}</p>
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                              <User className="w-3 h-3" />
+                              Posted by {cw.lastEditedBy || 'System'}
+                            </div>
                           </div>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={() => setConfirmDelete({ type: 'classwork', id: cw.id, title: cw.subject })} className="text-red-500">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => setConfirmDelete({ type: 'classwork', id: cw.id, title: cw.subject })} 
+                            className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -1433,52 +1872,100 @@ const AdminDashboard = ({
           {/* Documents Tab */}
           {canManageDocuments && (
             <TabsContent value="documents">
-            <div className="grid lg:grid-cols-3 gap-8">
-              <Card className="rounded-3xl border-none shadow-sm h-fit">
-                <CardHeader><CardTitle>Upload Document</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <Input 
-                    placeholder="Document Title" 
-                    value={newDoc.title} 
-                    onChange={e => setNewDoc({...newDoc, title: e.target.value})}
-                  />
-                  <Input 
-                    placeholder="File URL" 
-                    value={newDoc.url} 
-                    onChange={e => setNewDoc({...newDoc, url: e.target.value})}
-                  />
-                  <select 
-                    className="w-full p-3 rounded-xl border border-gray-200 text-sm"
-                    value={newDoc.type}
-                    onChange={e => setNewDoc({...newDoc, type: e.target.value as any})}
-                  >
-                    <option value="profarma">Profarma</option>
-                    <option value="form">Form</option>
-                    <option value="result">Result</option>
-                    <option value="report">Report</option>
-                  </select>
-                  <Button onClick={handleAddDocument} className="w-full bg-blue-600">
-                    <Plus className="w-4 h-4 mr-2" /> Add Document
-                  </Button>
-                </CardContent>
-              </Card>
-              <div className="lg:col-span-2 space-y-4">
-                {documents.map(doc => (
-                  <Card key={doc.id} className="rounded-2xl border-none shadow-sm">
-                    <CardContent className="p-4 flex justify-between items-center">
-                      <div>
-                        <h4 className="font-bold">{doc.title}</h4>
-                        <Badge variant="secondary">{doc.type}</Badge>
+              <div className="grid lg:grid-cols-3 gap-10">
+                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit sticky top-32">
+                  <div className="bg-slate-900 p-8 text-white">
+                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-white" />
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => setConfirmDelete({ type: 'document', id: doc.id, title: doc.title })} className="text-red-500">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                      Upload
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 font-medium mt-1">Add downloadable forms, reports, or certificates.</CardDescription>
+                  </div>
+                  <CardContent className="p-8 space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Document Title</label>
+                      <Input 
+                        placeholder="e.g. Annual Report 2024" 
+                        value={newDoc.title} 
+                        onChange={e => setNewDoc({...newDoc, title: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">File URL</label>
+                      <Input 
+                        placeholder="https://..." 
+                        value={newDoc.url} 
+                        onChange={e => setNewDoc({...newDoc, url: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-medium"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Category</label>
+                      <select 
+                        className="w-full h-12 px-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white transition-all text-sm font-bold appearance-none cursor-pointer"
+                        value={newDoc.type}
+                        onChange={e => setNewDoc({...newDoc, type: e.target.value as any})}
+                      >
+                        <option value="profarma">Profarma</option>
+                        <option value="form">Form</option>
+                        <option value="result">Result</option>
+                        <option value="report">Report</option>
+                      </select>
+                    </div>
+                    <Button onClick={handleAddDocument} className="w-full h-14 bg-primary hover:bg-blue-800 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+                      <Plus className="w-5 h-5 mr-2" /> Add Document
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="flex items-center justify-between mb-4 px-2">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Document Library</h3>
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{documents.length} Files</div>
+                  </div>
+                  {documents.length === 0 ? (
+                    <div className="bg-white rounded-[2.5rem] p-20 text-center border-2 border-dashed border-slate-100">
+                      <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <FileText className="w-10 h-10 text-slate-300" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900 mb-2">No documents uploaded</h4>
+                      <p className="text-slate-500">Upload your first document to make it available for download.</p>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {documents.map(doc => (
+                        <Card key={doc.id} className="rounded-[2rem] border-none shadow-xl shadow-blue-900/5 bg-white overflow-hidden group hover:shadow-2xl transition-all border border-slate-50">
+                          <CardContent className="p-6 flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-primary border border-blue-100 group-hover:bg-primary group-hover:text-white transition-all">
+                              <FileText className="w-6 h-6" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-black text-slate-900 truncate group-hover:text-primary transition-colors">{doc.title}</h4>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="secondary" className="rounded-md bg-slate-100 text-slate-500 text-[9px] font-black uppercase tracking-wider border-none">
+                                  {doc.type}
+                                </Badge>
+                              </div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => setConfirmDelete({ type: 'document', id: doc.id, title: doc.title })} 
+                              className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
           )}
         </Tabs>
         <ConfirmDialog 
@@ -1496,52 +1983,74 @@ const AdminDashboard = ({
 const Footer = ({ info }: { info: SchoolInfo | null }) => {
   const footer = info?.footer;
   return (
-    <footer className="bg-gray-900 text-white py-24">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="grid md:grid-cols-4 gap-16 mb-16">
+    <footer className="bg-slate-950 text-white py-32 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      <div className="max-w-7xl mx-auto px-4 relative z-10">
+        <div className="grid md:grid-cols-4 gap-16 mb-20">
           <div className="col-span-2">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="bg-blue-600 p-3 rounded-2xl">
+            <div className="flex items-center gap-4 mb-10 group cursor-pointer">
+              <div className="bg-primary p-3 rounded-2xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
                 <School className="text-white w-8 h-8" />
               </div>
-              <span className="text-3xl font-black tracking-tighter uppercase">{info?.name || "St. Xavier's School"}</span>
+              <div className="flex flex-col">
+                <span className="text-3xl font-black tracking-tighter uppercase leading-none">{info?.name || "St. Xavier's"}</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-primary mt-1">Academy of Excellence</span>
+              </div>
             </div>
-            <p className="text-gray-400 max-w-md leading-relaxed text-lg">
+            <p className="text-slate-400 max-w-md leading-relaxed text-lg mb-10">
               {footer?.about || "Dedicated to providing a holistic education that empowers students to become lifelong learners and responsible global citizens."}
             </p>
+            <div className="flex gap-4">
+              {['facebook', 'twitter', 'instagram', 'linkedin'].map((social) => (
+                <button key={social} className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all group">
+                  <div className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
+                </button>
+              ))}
+            </div>
           </div>
           <div>
-            <h4 className="font-bold text-xl mb-8 flex items-center gap-2"><Info className="w-5 h-5 text-blue-500" /> Quick Links</h4>
-            <ul className="space-y-4 text-gray-400">
-              <li><a href="#" className="hover:text-white transition-colors flex items-center gap-2"><ChevronRight className="w-4 h-4" /> About Us</a></li>
-              <li><a href="#" className="hover:text-white transition-colors flex items-center gap-2"><ChevronRight className="w-4 h-4" /> Admissions</a></li>
-              <li><a href="#" className="hover:text-white transition-colors flex items-center gap-2"><ChevronRight className="w-4 h-4" /> Academic Calendar</a></li>
-              <li><a href="#" className="hover:text-white transition-colors flex items-center gap-2"><ChevronRight className="w-4 h-4" /> Contact Us</a></li>
+            <h4 className="font-bold text-xl mb-10 text-white">Quick Links</h4>
+            <ul className="space-y-5 text-slate-400">
+              {['About Us', 'Admissions', 'Academic Calendar', 'Contact Us', 'Careers'].map((link) => (
+                <li key={link}>
+                  <a href="#" className="hover:text-primary transition-all flex items-center gap-3 group">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
+                    {link}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
           <div>
-            <h4 className="font-bold text-xl mb-8 flex items-center gap-2"><MapPin className="w-5 h-5 text-blue-500" /> Contact</h4>
-            <ul className="space-y-6 text-gray-400">
-              <li className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-blue-500 shrink-0" />
-                <span>{footer?.address || "123 Education Lane, Knowledge City"}</span>
+            <h4 className="font-bold text-xl mb-10 text-white">Contact Info</h4>
+            <ul className="space-y-8 text-slate-400">
+              <li className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                  <MapPin className="w-5 h-5 text-primary" />
+                </div>
+                <span className="text-sm leading-relaxed">{footer?.address || "123 Education Lane, Knowledge City"}</span>
               </li>
-              <li className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-blue-500 shrink-0" />
-                <span>{footer?.email || "info@stxaviers.edu"}</span>
+              <li className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                  <Mail className="w-5 h-5 text-primary" />
+                </div>
+                <span className="text-sm">{footer?.email || "info@stxaviers.edu"}</span>
               </li>
-              <li className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-blue-500 shrink-0" />
-                <span>{footer?.phone || "+1 (555) 123-4567"}</span>
+              <li className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                  <Phone className="w-5 h-5 text-primary" />
+                </div>
+                <span className="text-sm">{footer?.phone || "+1 (555) 123-4567"}</span>
               </li>
             </ul>
           </div>
         </div>
-        <div className="pt-12 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-sm">
+        <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8 text-slate-500 text-xs font-bold uppercase tracking-widest">
           <p>© {new Date().getFullYear()} {info?.name || "St. Xavier's School"}. All rights reserved.</p>
-          <div className="flex gap-8">
+          <div className="flex gap-10">
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
           </div>
         </div>
       </div>
@@ -1557,72 +2066,126 @@ const LoginView = ({ onTeacherLogin, onAdminLogin }: { onTeacherLogin: (t: Teach
   const handleTeacherSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const teacher = await teacherService.login(email, password);
-    setLoading(false);
-    if (teacher) {
-      onTeacherLogin(teacher);
-    } else {
-      toast.error("Invalid teacher credentials.");
+    try {
+      const teacher = await teacherService.login(email, password);
+      if (teacher) {
+        onTeacherLogin(teacher);
+        toast.success("Welcome back, " + teacher.name);
+      } else {
+        toast.error("Invalid teacher credentials.");
+      }
+    } catch (error) {
+      toast.error("Login failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 px-4 py-12">
-      <Card className="w-full max-w-md rounded-3xl border-none shadow-xl overflow-hidden">
-        <div className="bg-blue-600 p-8 text-white text-center">
-          <School className="w-12 h-12 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold">School Portal Login</h2>
-          <p className="text-blue-100 mt-2">Access your dashboard</p>
-        </div>
-        <CardContent className="p-8">
-          <Tabs defaultValue="teacher" className="space-y-6">
-            <TabsList className="grid grid-cols-2 bg-gray-100 p-1 rounded-2xl">
-              <TabsTrigger value="teacher" className="rounded-xl">Teacher</TabsTrigger>
-              <TabsTrigger value="admin" className="rounded-xl">Admin</TabsTrigger>
-            </TabsList>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-32 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_50%)]" />
+      
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md relative z-10"
+      >
+        <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/10 overflow-hidden bg-white/80 backdrop-blur-xl">
+          <div className="bg-primary p-12 text-white text-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+            <div className="bg-white/20 w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-6 backdrop-blur-md border border-white/20">
+              <School className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight">School Portal</h2>
+            <p className="text-blue-100/80 mt-2 font-medium">Secure access for faculty and staff</p>
+          </div>
+          
+          <CardContent className="p-10">
+            <Tabs defaultValue="teacher" className="space-y-8">
+              <TabsList className="grid grid-cols-2 bg-slate-100 p-1.5 rounded-2xl h-14">
+                <TabsTrigger value="teacher" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">Teacher</TabsTrigger>
+                <TabsTrigger value="admin" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">Admin</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="teacher">
-              <form onSubmit={handleTeacherSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Email Address</label>
-                  <Input 
-                    type="email" 
-                    placeholder="teacher@stxaviers.edu" 
-                    value={email} 
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                    className="rounded-xl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Password</label>
-                  <Input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    value={password} 
-                    onChange={e => setPassword(e.target.value)}
-                    required
-                    className="rounded-xl"
-                  />
-                </div>
-                <Button type="submit" className="w-full bg-blue-600 rounded-xl h-12 font-bold" disabled={loading}>
-                  {loading ? "Logging in..." : "Login as Teacher"}
-                </Button>
-              </form>
-            </TabsContent>
+              <TabsContent value="teacher">
+                <form onSubmit={handleTeacherSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Input 
+                        type="email" 
+                        placeholder="name@school.edu" 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center ml-1">
+                      <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Password</label>
+                      <button type="button" className="text-xs font-bold text-primary hover:underline">Forgot?</button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Input 
+                        type="password" 
+                        placeholder="••••••••" 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-12 h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium"
+                        required
+                      />
+                    </div>
+                  </div>
 
-            <TabsContent value="admin">
-              <div className="text-center space-y-6 py-4">
-                <p className="text-gray-600">Admin access is restricted to authorized Google accounts.</p>
-                <Button onClick={onAdminLogin} className="w-full bg-white text-gray-900 border border-gray-200 hover:bg-gray-50 rounded-xl h-12 font-bold flex items-center justify-center gap-2">
-                  <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
-                  Login with Google
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                  <Button 
+                    type="submit" 
+                    className="w-full h-14 rounded-2xl bg-primary hover:bg-blue-800 text-white font-bold text-lg shadow-xl shadow-primary/20 transition-all active:scale-95"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Authenticating...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        Sign In to Portal <ArrowRight className="w-5 h-5" />
+                      </div>
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="admin">
+                <div className="text-center space-y-6">
+                  <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100">
+                    <ShieldCheck className="w-12 h-12 text-primary mx-auto mb-4" />
+                    <p className="text-slate-600 font-medium leading-relaxed">
+                      Administrative access is restricted to authorized personnel. Please use the Google Admin Console to sign in.
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={onAdminLogin}
+                    className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-lg shadow-xl shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
+                    Continue with Google Admin
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+        
+        <p className="text-center mt-8 text-slate-400 text-sm font-medium">
+          Need help? Contact the <a href="#" className="text-primary hover:underline">IT Support Desk</a>
+        </p>
+      </motion.div>
     </div>
   );
 };
