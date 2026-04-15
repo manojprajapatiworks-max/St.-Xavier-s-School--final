@@ -119,9 +119,28 @@ service cloud.firestore {
 
     // Logs
     match /logs/{id} {
-      allow list: if isAdmin() || (isAuthenticated() && 'email' in request.auth.token && request.query.filters.userId == request.auth.token.email.lower());
-      allow get: if isAdmin() || (isAuthenticated() && 'email' in request.auth.token && resource.data.userId == request.auth.token.email.lower());
-      allow create: if isAdmin() || (isAuthenticated() && 'email' in request.auth.token && request.resource.data.userId == request.auth.token.email.lower());
+      allow list: if isAdmin() || (
+        isAuthenticated() && 
+        'userId' in request.query.filters && 
+        (
+          ('email' in request.auth.token && request.query.filters.userId.hasAny([request.auth.token.email.lower()])) ||
+          request.query.filters.userId.hasAny([request.auth.uid])
+        )
+      );
+      allow get: if isAdmin() || (
+        isAuthenticated() && 
+        (
+          ('email' in request.auth.token && resource.data.userId.lower() == request.auth.token.email.lower()) ||
+          (resource.data.userId == request.auth.uid)
+        )
+      );
+      allow create: if isAdmin() || (
+        isAuthenticated() && 
+        (
+          ('email' in request.auth.token && request.resource.data.userId.lower() == request.auth.token.email.lower()) ||
+          (request.resource.data.userId == request.auth.uid)
+        )
+      );
       allow update, delete: if false;
     }
 
