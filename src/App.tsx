@@ -111,6 +111,17 @@ const Navbar = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'portal', label: 'Parents Portal', icon: Users },
@@ -134,104 +145,98 @@ const Navbar = ({
               <School className="text-white w-6 h-6" />
             </div>
             <div className="flex flex-col">
-              <span className={`text-xl font-extrabold tracking-tight leading-none transition-colors duration-300 ${scrolled ? 'text-slate-900' : 'text-white'}`}>St. Xavier's</span>
-              <span className={`text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-300 ${scrolled ? 'text-primary' : 'text-blue-200'}`}>Academy of Excellence</span>
+              <span className={`text-lg sm:text-xl font-extrabold tracking-tight leading-none transition-colors duration-300 ${scrolled ? 'text-slate-900' : 'text-white'}`}>St. Xavier's</span>
+              <span className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-300 ${scrolled ? 'text-primary' : 'text-blue-200'}`}>Academy of Excellence</span>
             </div>
           </div>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
-                  activeTab === item.id 
-                    ? scrolled ? 'bg-primary/10 text-primary' : 'bg-white/20 text-white'
-                    : scrolled ? 'text-slate-600 hover:bg-slate-100' : 'text-white/80 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </button>
-            ))}
-            
-            <div className={`h-6 w-px mx-4 ${scrolled ? 'bg-slate-200' : 'bg-white/20'}`} />
-
-            {user ? (
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3 bg-slate-100/50 p-1 pr-4 rounded-full border border-white/20">
-                  {user.photoURL ? (
-                    <img src={user.photoURL} className="w-8 h-8 rounded-full shadow-sm" alt="profile" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
-                      {user.displayName?.[0] || user.email?.[0] || 'U'}
-                    </div>
-                  )}
-                  <span className={`text-sm font-bold transition-colors duration-300 ${scrolled ? 'text-slate-700' : 'text-white'}`}>
-                    {user.displayName?.split(' ')[0] || 'User'}
-                  </span>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={onLogout}
-                  className={`rounded-xl font-bold transition-colors duration-300 ${scrolled ? 'text-red-500 hover:bg-red-50' : 'text-white hover:bg-white/10'}`}
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </Button>
-              </div>
-            ) : (
-              <Button 
-                size="lg" 
-                onClick={onLogin} 
-                className="bg-primary hover:bg-blue-800 text-white rounded-2xl px-8 font-bold shadow-xl shadow-primary/20 transition-all hover:scale-105"
-              >
-                <LogIn className="w-4 h-4 mr-2" />
-                Portal Login
-              </Button>
-            )}
-          </div>
-
-          {/* Mobile Menu Toggle */}
-          <button className={`md:hidden p-2 rounded-xl transition-colors duration-300 ${scrolled ? 'bg-slate-100 text-slate-900' : 'bg-white/10 text-white'}`} onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X /> : <Menu />}
+          {/* Menu Toggle (Always visible) */}
+          <button 
+            className={`p-2 rounded-xl transition-colors duration-300 ${scrolled ? 'bg-slate-100 text-slate-900' : 'bg-white/10 text-white'}`} 
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Nav */}
+      {/* Navigation Menu (Dropdown) */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white border-bottom border-gray-100 overflow-hidden"
+            className="bg-white border-b border-gray-100 overflow-y-auto shadow-2xl max-h-[calc(100vh-80px)]"
           >
-            <div className="px-4 pt-2 pb-6 space-y-1">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setIsOpen(false);
-                  }}
-                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-base font-medium transition-colors ${
-                    activeTab === item.id ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  {item.label}
-                </button>
-              ))}
-              {!user && (
-                <Button variant="outline" className="w-full mt-4" onClick={onLogin}>
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Admin Login
-                </Button>
-              )}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4 px-4">Navigation</p>
+                  {navItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        setIsOpen(false);
+                      }}
+                      className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-base font-bold transition-all ${
+                        activeTab === item.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4 px-4">Account</p>
+                  {user ? (
+                    <div className="bg-slate-50 rounded-3xl p-6 space-y-6">
+                      <div className="flex items-center gap-4">
+                        {user.photoURL ? (
+                          <img src={user.photoURL} className="w-12 h-12 rounded-full shadow-md" alt="profile" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white text-lg font-bold">
+                            {user.displayName?.[0] || user.email?.[0] || 'U'}
+                          </div>
+                        )}
+                        <div>
+                          <div className="text-base font-bold text-slate-900">{user.displayName || 'User'}</div>
+                          <div className="text-sm text-slate-500">{user.email}</div>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-start text-red-500 hover:bg-red-100 hover:text-red-600 font-bold h-12 px-4 rounded-xl" 
+                        onClick={() => {
+                          onLogout();
+                          setIsOpen(false);
+                        }}
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Logout from Portal
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="bg-blue-50 rounded-3xl p-6">
+                      <p className="text-sm text-blue-600 font-medium mb-4">Access the school management system and parent portal.</p>
+                      <Button 
+                        size="lg"
+                        className="w-full bg-primary hover:bg-blue-800 text-white rounded-xl font-bold h-14 shadow-lg shadow-primary/20" 
+                        onClick={() => {
+                          onLogin();
+                          setIsOpen(false);
+                        }}
+                      >
+                        <LogIn className="w-5 h-5 mr-2" />
+                        Portal Login
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
@@ -300,7 +305,7 @@ const Hero = ({ info }: { info: SchoolInfo | null }) => {
       ))}
 
       {/* Content */}
-      <div className="relative z-20 h-full max-w-7xl mx-auto px-4 flex flex-col justify-center">
+      <div className="relative z-20 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -311,23 +316,23 @@ const Hero = ({ info }: { info: SchoolInfo | null }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full mb-8"
+            className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full mb-6 sm:mb-8"
           >
-            <Badge className="bg-accent text-white border-none px-3 py-1">New Session 2026-27</Badge>
-            <span className="text-white/90 text-sm font-bold tracking-wide">Admissions are now open!</span>
+            <Badge className="bg-accent text-white border-none px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs">New Session 2026-27</Badge>
+            <span className="text-white/90 text-[10px] sm:text-sm font-bold tracking-wide">Admissions are now open!</span>
           </motion.div>
           
-          <h1 className="text-6xl md:text-8xl font-extrabold text-white mb-8 leading-[0.9] tracking-tighter text-balance">
+          <h1 className="text-4xl sm:text-6xl md:text-8xl font-extrabold text-white mb-6 md:mb-8 leading-[0.95] sm:leading-[0.9] tracking-tighter text-balance">
             {info?.heroTitle || "Empowering Minds, Shaping Futures"}
           </h1>
-          <p className="text-xl md:text-2xl text-blue-100/90 mb-12 leading-relaxed font-medium max-w-xl text-balance">
+          <p className="text-base sm:text-xl md:text-2xl text-blue-100/90 mb-8 md:mb-12 leading-relaxed font-medium max-w-xl text-balance">
             {info?.heroSubtitle || "Join St. Xavier's School, where we nurture creativity, character, and academic excellence in every student."}
           </p>
-          <div className="flex flex-wrap gap-6">
-            <Button size="lg" className="bg-accent hover:bg-orange-600 text-white rounded-2xl px-12 h-16 text-lg font-extrabold shadow-2xl shadow-accent/20 transition-all hover:scale-105 active:scale-95">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+            <Button size="lg" className="bg-accent hover:bg-orange-600 text-white rounded-2xl px-10 sm:px-12 h-14 sm:h-16 text-base sm:text-lg font-extrabold shadow-2xl shadow-accent/20 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto">
               Apply Now <ChevronRight className="ml-2 w-5 h-5" />
             </Button>
-            <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 rounded-2xl px-12 h-16 text-lg font-extrabold backdrop-blur-md transition-all hover:scale-105 active:scale-95">
+            <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 rounded-2xl px-10 sm:px-12 h-14 sm:h-16 text-base sm:text-lg font-extrabold backdrop-blur-md transition-all hover:scale-105 active:scale-95 w-full sm:w-auto">
               Virtual Tour
             </Button>
           </div>
@@ -364,54 +369,54 @@ const Hero = ({ info }: { info: SchoolInfo | null }) => {
 
 const CareersSection = ({ jobs }: { jobs: JobPosting[] }) => {
   return (
-    <div className="py-32 bg-slate-50 min-h-screen">
+    <div className="py-20 md:py-32 bg-slate-50 min-h-screen">
       <div className="max-w-5xl mx-auto px-4">
-        <div className="text-center mb-20">
+        <div className="text-center mb-12 md:mb-20">
           <Badge className="bg-primary/10 text-primary border-none px-4 py-1.5 rounded-full mb-6 font-bold uppercase tracking-widest text-[10px]">Join Our Team</Badge>
-          <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight mb-6">Career Opportunities</h1>
-          <p className="text-slate-500 text-lg font-medium max-w-2xl mx-auto">
+          <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight mb-6">Career Opportunities</h1>
+          <p className="text-slate-500 text-base md:text-lg font-medium max-w-2xl mx-auto">
             Become a part of our mission to empower minds and shape futures. We are always looking for passionate educators and staff members.
           </p>
         </div>
 
         {jobs.length === 0 ? (
-          <div className="bg-white rounded-[3rem] p-20 text-center shadow-xl shadow-blue-900/5">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <UserPlus className="w-10 h-10 text-slate-300" />
+          <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-10 md:p-20 text-center shadow-xl shadow-blue-900/5">
+            <div className="w-16 h-16 md:w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <UserPlus className="w-8 h-8 md:w-10 h-10 text-slate-300" />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">No Openings Right Now</h3>
-            <p className="text-slate-500">Check back later or follow us on social media for updates.</p>
+            <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-2">No Openings Right Now</h3>
+            <p className="text-slate-500 text-sm md:text-base">Check back later or follow us on social media for updates.</p>
           </div>
         ) : (
-          <div className="grid gap-8">
+          <div className="grid gap-6 md:gap-8">
             {jobs.filter(j => j.status === 'open').map(job => (
-              <Card key={job.id} className="rounded-[2.5rem] border-none shadow-xl shadow-blue-900/5 bg-white overflow-hidden group hover:shadow-2xl transition-all">
-                <CardContent className="p-10">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-4">
+              <Card key={job.id} className="rounded-[2rem] md:rounded-[2.5rem] border-none shadow-xl shadow-blue-900/5 bg-white overflow-hidden group hover:shadow-2xl transition-all">
+                <CardContent className="p-6 sm:p-10">
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+                    <div className="flex-1 w-full">
+                      <div className="flex flex-wrap items-center gap-3 mb-4">
                         <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-none px-3 py-1 font-bold">{job.department}</Badge>
-                        <span className="text-xs font-bold text-slate-400 flex items-center gap-2">
+                        <span className="text-[10px] sm:text-xs font-bold text-slate-400 flex items-center gap-2">
                           <Calendar className="w-3.5 h-3.5" />
                           Posted on {new Date(job.postedAt).toLocaleDateString()}
                         </span>
                       </div>
-                      <h3 className="text-3xl font-black text-slate-900 mb-4 group-hover:text-primary transition-colors">{job.title}</h3>
-                      <p className="text-slate-600 font-medium leading-relaxed mb-6">{job.description}</p>
+                      <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-4 group-hover:text-primary transition-colors">{job.title}</h3>
+                      <p className="text-slate-600 text-sm sm:text-base font-medium leading-relaxed mb-6">{job.description}</p>
                       
                       <div className="space-y-3">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Requirements</h4>
-                        <ul className="grid md:grid-cols-2 gap-x-8 gap-y-2">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Requirements</h4>
+                        <ul className="grid sm:grid-cols-2 gap-x-8 gap-y-2">
                           {job.requirements.split('\n').filter(r => r.trim()).map((req, i) => (
-                            <li key={i} className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                            <li key={i} className="flex items-start gap-3 text-xs sm:text-sm font-bold text-slate-700">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                               {req}
                             </li>
                           ))}
                         </ul>
                       </div>
                     </div>
-                    <Button size="lg" className="bg-primary hover:bg-blue-800 text-white rounded-2xl px-10 h-16 font-black text-lg shadow-xl shadow-primary/20 transition-all hover:scale-105 shrink-0">
+                    <Button size="lg" className="bg-primary hover:bg-blue-800 text-white rounded-2xl px-10 h-14 sm:h-16 font-black text-base sm:text-lg shadow-xl shadow-primary/20 transition-all hover:scale-105 shrink-0 w-full lg:w-auto">
                       Apply Now
                     </Button>
                   </div>
@@ -426,23 +431,23 @@ const CareersSection = ({ jobs }: { jobs: JobPosting[] }) => {
 };
 const AnnouncementsSection = ({ announcements }: { announcements: Announcement[] }) => {
   return (
-    <section className="py-32 bg-white relative overflow-hidden">
+    <section className="py-20 md:py-32 bg-white relative overflow-hidden">
       <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-blue-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-50" />
       <div className="max-w-7xl mx-auto px-4 relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-12 md:mb-16 gap-6">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-xs mb-4">
+            <div className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-[10px] sm:text-xs mb-4">
               <div className="w-8 h-px bg-primary" />
               Stay Informed
             </div>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">Latest Announcements</h2>
-            <p className="text-slate-600 text-lg">Keep up with the vibrant life at St. Xavier's. From academic milestones to cultural celebrations.</p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">Latest Announcements</h2>
+            <p className="text-slate-600 text-base md:text-lg">Keep up with the vibrant life at St. Xavier's. From academic milestones to cultural celebrations.</p>
           </div>
-          <Button variant="outline" className="rounded-2xl border-slate-200 hover:bg-slate-50 px-8 h-12 font-bold group">
+          <Button variant="outline" className="rounded-2xl border-slate-200 hover:bg-slate-50 px-8 h-12 font-bold group w-full lg:w-auto">
             View All News <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {announcements.slice(0, 3).map((ann, idx) => (
             <motion.div
               key={ann.id}
@@ -499,17 +504,17 @@ const AnnouncementsSection = ({ announcements }: { announcements: Announcement[]
 
 const FacultySection = ({ faculty }: { faculty: SchoolInfo['faculty'] }) => {
   return (
-    <section className="py-32 bg-slate-50 relative overflow-hidden">
+    <section className="py-20 md:py-32 bg-slate-50 relative overflow-hidden">
       <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-blue-100/50 rounded-full blur-3xl -ml-20 -mb-20 opacity-30" />
       <div className="max-w-7xl mx-auto px-4 relative z-10">
-        <div className="text-center mb-20">
-          <div className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-xs mb-4 justify-center">
+        <div className="text-center mb-12 md:mb-20">
+          <div className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-[10px] sm:text-xs mb-4 justify-center">
             <div className="w-8 h-px bg-primary" />
             Our Mentors
             <div className="w-8 h-px bg-primary" />
           </div>
-          <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">Distinguished Faculty</h2>
-          <p className="text-slate-600 max-w-2xl mx-auto text-lg">Meet the visionary educators and subject experts who are dedicated to nurturing the next generation of leaders.</p>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">Distinguished Faculty</h2>
+          <p className="text-slate-600 max-w-2xl mx-auto text-base md:text-lg">Meet the visionary educators and subject experts who are dedicated to nurturing the next generation of leaders.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           {faculty?.map((member, idx) => (
@@ -557,13 +562,13 @@ const FacultySection = ({ faculty }: { faculty: SchoolInfo['faculty'] }) => {
 
 const FacilitiesSection = ({ facilities }: { facilities: SchoolInfo['facilities'] }) => {
   return (
-    <section className="py-24 bg-white">
+    <section className="py-20 md:py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">World-Class Facilities</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">We provide a modern learning environment equipped with state-of-the-art infrastructure.</p>
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">World-Class Facilities</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto text-sm md:text-base">We provide a modern learning environment equipped with state-of-the-art infrastructure.</p>
         </div>
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {facilities?.map((facility, idx) => (
             <motion.div
               key={idx}
@@ -692,27 +697,27 @@ const ParentPortal = () => {
   }));
 
   return (
-    <div className="min-h-screen bg-slate-50 py-32">
+    <div className="min-h-screen bg-slate-50 py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 md:mb-12 gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-xs mb-3">
+            <div className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-[10px] sm:text-xs mb-3">
               <div className="w-8 h-px bg-primary" />
               Parent Dashboard
             </div>
-            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Academic Overview</h1>
-            <p className="text-slate-500 mt-1 font-medium">Viewing records for <span className="text-primary font-bold">{student.name}</span></p>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Academic Overview</h1>
+            <p className="text-slate-500 mt-1 font-medium text-sm sm:text-base">Viewing records for <span className="text-primary font-bold">{student.name}</span></p>
           </div>
           <Button 
             variant="outline" 
             onClick={() => setStudent(null)} 
-            className="rounded-2xl border-slate-200 hover:bg-white hover:text-red-500 hover:border-red-100 transition-all h-12 px-6 font-bold shadow-sm"
+            className="rounded-2xl border-slate-200 hover:bg-white hover:text-red-500 hover:border-red-100 transition-all h-12 px-6 font-bold shadow-sm w-full lg:w-auto"
           >
             <LogOut className="w-4 h-4 mr-2" /> Exit Portal
           </Button>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
           {/* Left Column: Details & Attendance */}
           <div className="space-y-10">
             <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 overflow-hidden bg-white">
@@ -774,13 +779,15 @@ const ParentPortal = () => {
           </div>
 
           {/* Middle Column: Performance & Results */}
-          <div className="lg:col-span-2 space-y-10">
+          <div className="lg:col-span-2 space-y-8 md:space-y-10">
             <Tabs defaultValue="results" className="w-full">
-              <TabsList className="bg-white p-2 rounded-[1.5rem] shadow-2xl shadow-blue-900/5 mb-10 h-16 inline-flex border border-slate-100">
-                <TabsTrigger value="results" className="rounded-xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Exam Results</TabsTrigger>
-                <TabsTrigger value="classwork" className="rounded-xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Class Work</TabsTrigger>
-                <TabsTrigger value="performance" className="rounded-xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Performance Chart</TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto no-scrollbar -mx-4 px-4 mb-8 md:mb-10">
+                <TabsList className="bg-white p-2 rounded-[1.5rem] shadow-2xl shadow-blue-900/5 h-16 inline-flex border border-slate-100 min-w-max">
+                  <TabsTrigger value="results" className="rounded-xl px-6 sm:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Exam Results</TabsTrigger>
+                  <TabsTrigger value="classwork" className="rounded-xl px-6 sm:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Class Work</TabsTrigger>
+                  <TabsTrigger value="performance" className="rounded-xl px-6 sm:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Performance Chart</TabsTrigger>
+                </TabsList>
+              </div>
 
               <TabsContent value="results">
                 <Card className="rounded-3xl border-none shadow-sm">
@@ -788,31 +795,33 @@ const ParentPortal = () => {
                     <CardTitle>Academic Performance</CardTitle>
                     <CardDescription>Latest test and exam results for this session.</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Subject</TableHead>
-                          <TableHead>Term</TableHead>
-                          <TableHead>Score</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {student.results.map((res, i) => (
-                          <TableRow key={i}>
-                            <TableCell className="font-medium">{res.subject}</TableCell>
-                            <TableCell>{res.term}</TableCell>
-                            <TableCell>{res.score} / {res.total}</TableCell>
-                            <TableCell>
-                              <Badge className={res.score / res.total >= 0.4 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
-                                {res.score / res.total >= 0.4 ? 'Pass' : 'Fail'}
-                              </Badge>
-                            </TableCell>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="pl-8">Subject</TableHead>
+                            <TableHead>Term</TableHead>
+                            <TableHead>Score</TableHead>
+                            <TableHead className="pr-8">Status</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {student.results.map((res, i) => (
+                            <TableRow key={i}>
+                              <TableCell className="font-medium pl-8">{res.subject}</TableCell>
+                              <TableCell>{res.term}</TableCell>
+                              <TableCell>{res.score} / {res.total}</TableCell>
+                              <TableCell className="pr-8">
+                                <Badge className={res.score / res.total >= 0.4 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                                  {res.score / res.total >= 0.4 ? 'Pass' : 'Fail'}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -872,13 +881,13 @@ const ParentPortal = () => {
 
 const DocumentsSection = ({ documents }: { documents: SchoolDocument[] }) => {
   return (
-    <section className="py-24 bg-gray-50">
+    <section className="py-20 md:py-24 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Downloadable Resources</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">Access important school documents, forms, and reports.</p>
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Downloadable Resources</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto text-sm md:text-base">Access important school documents, forms, and reports.</p>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {documents.map((doc) => (
             <Card key={doc.id} className="rounded-2xl border-none shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="p-6">
@@ -1060,54 +1069,56 @@ const AdminDashboard = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-32">
+    <div className="min-h-screen bg-slate-50 py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="mb-16">
-          <div className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-xs mb-4">
+        <div className="mb-12 md:mb-16">
+          <div className="inline-flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-[10px] sm:text-xs mb-4">
             <div className="w-8 h-px bg-primary" />
             {currentUser.role === 'admin' ? 'Administrative Control' : 'Faculty Access'}
           </div>
-          <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none mb-4">
+          <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-none mb-4">
             Management Portal
           </h1>
-          <p className="text-slate-500 text-lg font-medium max-w-2xl">
+          <p className="text-slate-500 text-base md:text-lg font-medium max-w-2xl">
             Welcome back, <span className="text-primary font-bold">{currentUser.name}</span>. You have access to manage school operations and student records.
           </p>
         </div>
 
-        <Tabs defaultValue={canManageInfo ? "info" : canManageTeachers ? "teachers" : "students"} className="space-y-12">
-          <TabsList className="bg-white p-2 rounded-[2rem] shadow-2xl shadow-blue-900/5 h-20 inline-flex border border-slate-100 overflow-x-auto max-w-full no-scrollbar">
-            {canManageInfo && <TabsTrigger value="info" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">School Profile</TabsTrigger>}
-            {canManageAnnouncements && <TabsTrigger value="announcements" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Announcements</TabsTrigger>}
-            {canManageTeachers && <TabsTrigger value="teachers" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Faculty</TabsTrigger>}
-            {canSeeStudentsTab && <TabsTrigger value="students" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Students</TabsTrigger>}
-            {canManageClassWork && <TabsTrigger value="classwork" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Classwork</TabsTrigger>}
-            {canManageDocuments && <TabsTrigger value="documents" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Documents</TabsTrigger>}
-            {canManageCareers && <TabsTrigger value="careers" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Careers</TabsTrigger>}
-            {canSeeLogbook && <TabsTrigger value="logbook" className="rounded-2xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Logbook</TabsTrigger>}
-          </TabsList>
+        <Tabs defaultValue={canManageInfo ? "info" : canManageTeachers ? "teachers" : "students"} className="space-y-8 md:space-y-12">
+          <div className="overflow-x-auto no-scrollbar -mx-4 px-4 mb-4 md:mb-0">
+            <TabsList className="bg-white p-2 rounded-[1.5rem] md:rounded-[2rem] shadow-2xl shadow-blue-900/5 h-16 md:h-20 inline-flex border border-slate-100 min-w-max">
+              {canManageInfo && <TabsTrigger value="info" className="rounded-xl md:rounded-2xl px-6 md:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">School Profile</TabsTrigger>}
+              {canManageAnnouncements && <TabsTrigger value="announcements" className="rounded-xl md:rounded-2xl px-6 md:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Announcements</TabsTrigger>}
+              {canManageTeachers && <TabsTrigger value="teachers" className="rounded-xl md:rounded-2xl px-6 md:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Faculty</TabsTrigger>}
+              {canSeeStudentsTab && <TabsTrigger value="students" className="rounded-xl md:rounded-2xl px-6 md:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Students</TabsTrigger>}
+              {canManageClassWork && <TabsTrigger value="classwork" className="rounded-xl md:rounded-2xl px-6 md:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Classwork</TabsTrigger>}
+              {canManageDocuments && <TabsTrigger value="documents" className="rounded-xl md:rounded-2xl px-6 md:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Documents</TabsTrigger>}
+              {canManageCareers && <TabsTrigger value="careers" className="rounded-xl md:rounded-2xl px-6 md:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Careers</TabsTrigger>}
+              {canSeeLogbook && <TabsTrigger value="logbook" className="rounded-xl md:rounded-2xl px-6 md:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Logbook</TabsTrigger>}
+            </TabsList>
+          </div>
 
           {/* School Info Tab */}
           {canManageInfo && (
             <TabsContent value="info">
               <div className="space-y-10">
                 <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
-                  <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
+                  <div className="bg-slate-900 p-6 md:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                     <div>
-                      <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                          <Settings className="w-5 h-5 text-white" />
+                      <CardTitle className="text-xl md:text-2xl font-extrabold flex items-center gap-3">
+                        <div className="w-8 h-8 md:w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                          <Settings className="w-4 h-4 md:w-5 h-5 text-white" />
                         </div>
                         General Settings
                       </CardTitle>
-                      <CardDescription className="text-slate-400 font-medium mt-1">Update the school's public profile and hero section.</CardDescription>
+                      <CardDescription className="text-slate-400 font-medium mt-1 text-xs md:text-sm">Update the school's public profile and hero section.</CardDescription>
                     </div>
-                    <Button onClick={handleUpdateInfo} className="rounded-xl bg-primary hover:bg-blue-800 font-bold px-8 h-12">
+                    <Button onClick={handleUpdateInfo} className="w-full sm:w-auto rounded-xl bg-primary hover:bg-blue-800 font-bold px-8 h-12">
                       Save Changes
                     </Button>
                   </div>
-                  <CardContent className="p-10 space-y-10">
-                    <div className="grid md:grid-cols-2 gap-10">
+                  <CardContent className="p-6 md:p-10 space-y-6 md:space-y-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                       <div className="space-y-3">
                         <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">School Name</label>
                         <Input 
@@ -1153,20 +1164,20 @@ const AdminDashboard = ({
                   </CardContent>
                 </Card>
 
-                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
-                  <div className="bg-slate-900 p-8 text-white">
-                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                        <Users className="w-5 h-5 text-white" />
+                <Card className="rounded-[1.5rem] md:rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
+                  <div className="bg-slate-900 p-6 md:p-8 text-white">
+                    <CardTitle className="text-xl md:text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-8 h-8 md:w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <Users className="w-4 h-4 md:w-5 h-5 text-white" />
                       </div>
                       Faculty Management
                     </CardTitle>
-                    <CardDescription className="text-slate-400 font-medium mt-1">Manage the school's teaching staff and their public profiles.</CardDescription>
+                    <CardDescription className="text-slate-400 font-medium mt-1 text-xs md:text-sm">Manage the school's teaching staff and their public profiles.</CardDescription>
                   </div>
-                  <CardContent className="p-10 space-y-8">
-                    <div className="space-y-6">
+                  <CardContent className="p-6 md:p-10 space-y-6 md:space-y-8">
+                    <div className="space-y-4 md:space-y-6">
                       {editingInfo?.faculty?.map((f, idx) => (
-                        <div key={f.id} className="grid md:grid-cols-3 gap-6 p-8 bg-slate-50 rounded-[2rem] relative group border border-slate-100 transition-all hover:bg-white hover:shadow-xl hover:shadow-blue-900/5">
+                        <div key={f.id} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 p-6 md:p-8 bg-slate-50 rounded-[1.5rem] md:rounded-[2rem] relative group border border-slate-100 transition-all hover:bg-white hover:shadow-xl hover:shadow-blue-900/5">
                           <div className="space-y-2">
                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
                             <Input placeholder="Name" value={f.name} onChange={e => {
@@ -1226,20 +1237,20 @@ const AdminDashboard = ({
                   </CardContent>
                 </Card>
 
-                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
-                  <div className="bg-slate-900 p-8 text-white">
-                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                        <Building2 className="w-5 h-5 text-white" />
+                <Card className="rounded-[1.5rem] md:rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
+                  <div className="bg-slate-900 p-6 md:p-8 text-white">
+                    <CardTitle className="text-xl md:text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-8 h-8 md:w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <Building2 className="w-4 h-4 md:w-5 h-5 text-white" />
                       </div>
                       Facilities Management
                     </CardTitle>
-                    <CardDescription className="text-slate-400 font-medium mt-1">Showcase the school's infrastructure and amenities.</CardDescription>
+                    <CardDescription className="text-slate-400 font-medium mt-1 text-xs md:text-sm">Showcase the school's infrastructure and amenities.</CardDescription>
                   </div>
-                  <CardContent className="p-10 space-y-8">
-                    <div className="grid md:grid-cols-2 gap-8">
+                  <CardContent className="p-6 md:p-10 space-y-6 md:space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                       {editingInfo?.facilities?.map((f, idx) => (
-                        <div key={f.id} className="p-8 bg-slate-50 rounded-[2rem] relative group border border-slate-100 transition-all hover:bg-white hover:shadow-xl hover:shadow-blue-900/5">
+                        <div key={f.id} className="p-6 md:p-8 bg-slate-50 rounded-[1.5rem] md:rounded-[2rem] relative group border border-slate-100 transition-all hover:bg-white hover:shadow-xl hover:shadow-blue-900/5">
                           <div className="space-y-4">
                             <div className="space-y-2">
                               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Facility Title</label>
@@ -1298,18 +1309,18 @@ const AdminDashboard = ({
                   </CardContent>
                 </Card>
 
-                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
-                  <div className="bg-slate-900 p-8 text-white">
-                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                        <MapPin className="w-5 h-5 text-white" />
+                <Card className="rounded-[1.5rem] md:rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
+                  <div className="bg-slate-900 p-6 md:p-8 text-white">
+                    <CardTitle className="text-xl md:text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-8 h-8 md:w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <MapPin className="w-4 h-4 md:w-5 h-5 text-white" />
                       </div>
                       Footer Information
                     </CardTitle>
-                    <CardDescription className="text-slate-400 font-medium mt-1">Update contact details and footer content.</CardDescription>
+                    <CardDescription className="text-slate-400 font-medium mt-1 text-xs md:text-sm">Update contact details and footer content.</CardDescription>
                   </div>
-                  <CardContent className="p-10 space-y-8">
-                    <div className="grid md:grid-cols-2 gap-10">
+                  <CardContent className="p-6 md:p-10 space-y-6 md:space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                       <div className="space-y-3">
                         <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Address</label>
                         <Input 
@@ -1358,18 +1369,18 @@ const AdminDashboard = ({
           {/* Careers Tab */}
           {canManageCareers && (
             <TabsContent value="careers">
-              <div className="grid lg:grid-cols-3 gap-10">
-                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit sticky top-32">
-                  <div className="bg-slate-900 p-8 text-white">
-                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                        <UserPlus className="w-5 h-5 text-white" />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
+                <Card className="rounded-[1.5rem] md:rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit lg:sticky lg:top-32">
+                  <div className="bg-slate-900 p-6 md:p-8 text-white">
+                    <CardTitle className="text-xl md:text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-8 h-8 md:w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <UserPlus className="w-4 h-4 md:w-5 h-5 text-white" />
                       </div>
                       Post Job
                     </CardTitle>
-                    <CardDescription className="text-slate-400 font-medium mt-1">Add new career opportunities.</CardDescription>
+                    <CardDescription className="text-slate-400 font-medium mt-1 text-xs md:text-sm">Add new career opportunities.</CardDescription>
                   </div>
-                  <CardContent className="p-8 space-y-6">
+                  <CardContent className="p-6 md:p-8 space-y-4 md:space-y-6">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Job Title</label>
                       <Input 
@@ -1454,16 +1465,16 @@ const AdminDashboard = ({
           {/* Logbook Tab */}
           {canSeeLogbook && (
             <TabsContent value="logbook">
-              <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
-                <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
+              <Card className="rounded-[1.5rem] md:rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden">
+                <div className="bg-slate-900 p-6 md:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                   <div>
-                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-white" />
+                    <CardTitle className="text-xl md:text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-8 h-8 md:w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <FileText className="w-4 h-4 md:w-5 h-5 text-white" />
                       </div>
                       System Logbook
                     </CardTitle>
-                    <CardDescription className="text-slate-400 font-medium mt-1">
+                    <CardDescription className="text-slate-400 font-medium mt-1 text-xs md:text-sm">
                       {isAdminRole ? 'Complete audit trail of all administrative and faculty actions.' : 'Your personal activity log.'}
                     </CardDescription>
                   </div>
@@ -1493,7 +1504,7 @@ const AdminDashboard = ({
                         link.click();
                         document.body.removeChild(link);
                       }}
-                      className="rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold px-6 h-12 flex items-center gap-2"
+                      className="w-full sm:w-auto rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold px-6 h-12 flex items-center justify-center gap-2"
                     >
                       <Download className="w-4 h-4" /> Export CSV
                     </Button>
@@ -1559,18 +1570,18 @@ const AdminDashboard = ({
           )}
           {canManageAnnouncements && (
             <TabsContent value="announcements">
-              <div className="grid lg:grid-cols-3 gap-10">
-                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit sticky top-32">
-                  <div className="bg-slate-900 p-8 text-white">
-                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                        <Plus className="w-5 h-5 text-white" />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
+                <Card className="rounded-[1.5rem] md:rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit lg:sticky lg:top-32">
+                  <div className="bg-slate-900 p-6 md:p-8 text-white">
+                    <CardTitle className="text-xl md:text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-8 h-8 md:w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <Plus className="w-4 h-4 md:w-5 h-5 text-white" />
                       </div>
                       New Post
                     </CardTitle>
-                    <CardDescription className="text-slate-400 font-medium mt-1">Broadcast news to the entire school portal.</CardDescription>
+                    <CardDescription className="text-slate-400 font-medium mt-1 text-xs md:text-sm">Broadcast news to the entire school portal.</CardDescription>
                   </div>
-                  <CardContent className="p-8 space-y-6">
+                  <CardContent className="p-6 md:p-8 space-y-4 md:space-y-6">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Title</label>
                       <Input 
@@ -1660,20 +1671,20 @@ const AdminDashboard = ({
           {/* Students Tab */}
           {canSeeStudentsTab && (
             <TabsContent value="students">
-              <div className="grid lg:grid-cols-3 gap-10">
-                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit sticky top-32">
-                  <div className="bg-slate-900 p-8 text-white">
-                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                        {selectedStudent ? <Edit className="w-5 h-5 text-white" /> : <Plus className="w-5 h-5 text-white" />}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
+                <Card className="rounded-[1.5rem] md:rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit lg:sticky lg:top-32">
+                  <div className="bg-slate-900 p-6 md:p-8 text-white">
+                    <CardTitle className="text-xl md:text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-8 h-8 md:w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        {selectedStudent ? <Edit className="w-4 h-4 md:w-5 h-5 text-white" /> : <Plus className="w-4 h-4 md:w-5 h-5 text-white" />}
                       </div>
                       {selectedStudent ? 'Edit Student' : 'Add Student'}
                     </CardTitle>
-                    <CardDescription className="text-slate-400 font-medium mt-1">
+                    <CardDescription className="text-slate-400 font-medium mt-1 text-xs md:text-sm">
                       {selectedStudent ? 'Modify existing student record.' : 'Register a new student to the portal.'}
                     </CardDescription>
                   </div>
-                  <CardContent className="p-8 space-y-6">
+                  <CardContent className="p-6 md:p-8 space-y-4 md:space-y-6">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Student Name</label>
                       <Input 
@@ -1895,18 +1906,18 @@ const AdminDashboard = ({
           {/* Teachers Tab */}
           {canManageTeachers && (
             <TabsContent value="teachers">
-              <div className="grid lg:grid-cols-3 gap-10">
-                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit sticky top-32">
-                  <div className="bg-slate-900 p-8 text-white">
-                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                        <UserPlus className="w-5 h-5 text-white" />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
+                <Card className="rounded-[1.5rem] md:rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit lg:sticky lg:top-32">
+                  <div className="bg-slate-900 p-6 md:p-8 text-white">
+                    <CardTitle className="text-xl md:text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-8 h-8 md:w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <UserPlus className="w-4 h-4 md:w-5 h-5 text-white" />
                       </div>
                       Add Teacher
                     </CardTitle>
-                    <CardDescription className="text-slate-400 font-medium mt-1">Register a new faculty member with specific access privileges.</CardDescription>
+                    <CardDescription className="text-slate-400 font-medium mt-1 text-xs md:text-sm">Register a new faculty member with specific access privileges.</CardDescription>
                   </div>
-                  <CardContent className="p-8 space-y-6">
+                  <CardContent className="p-6 md:p-8 space-y-4 md:space-y-6">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
                       <Input 
@@ -2107,18 +2118,18 @@ const AdminDashboard = ({
           {/* Class Work Tab */}
           {canManageClassWork && (
             <TabsContent value="classwork">
-              <div className="grid lg:grid-cols-3 gap-10">
-                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit sticky top-32">
-                  <div className="bg-slate-900 p-8 text-white">
-                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                        <BookOpen className="w-5 h-5 text-white" />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
+                <Card className="rounded-[1.5rem] md:rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit lg:sticky lg:top-32">
+                  <div className="bg-slate-900 p-6 md:p-8 text-white">
+                    <CardTitle className="text-xl md:text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-8 h-8 md:w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <BookOpen className="w-4 h-4 md:w-5 h-5 text-white" />
                       </div>
                       Post Work
                     </CardTitle>
-                    <CardDescription className="text-slate-400 font-medium mt-1">Assign new tasks or study materials to specific classes.</CardDescription>
+                    <CardDescription className="text-slate-400 font-medium mt-1 text-xs md:text-sm">Assign new tasks or study materials to specific classes.</CardDescription>
                   </div>
-                  <CardContent className="p-8 space-y-6">
+                  <CardContent className="p-6 md:p-8 space-y-4 md:space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Class</label>
@@ -2216,18 +2227,18 @@ const AdminDashboard = ({
           {/* Documents Tab */}
           {canManageDocuments && (
             <TabsContent value="documents">
-              <div className="grid lg:grid-cols-3 gap-10">
-                <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit sticky top-32">
-                  <div className="bg-slate-900 p-8 text-white">
-                    <CardTitle className="text-2xl font-extrabold flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-white" />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
+                <Card className="rounded-[1.5rem] md:rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit lg:sticky lg:top-32">
+                  <div className="bg-slate-900 p-6 md:p-8 text-white">
+                    <CardTitle className="text-xl md:text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-8 h-8 md:w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                        <FileText className="w-4 h-4 md:w-5 h-5 text-white" />
                       </div>
                       Upload
                     </CardTitle>
-                    <CardDescription className="text-slate-400 font-medium mt-1">Add downloadable forms, reports, or certificates.</CardDescription>
+                    <CardDescription className="text-slate-400 font-medium mt-1 text-xs md:text-sm">Add downloadable forms, reports, or certificates.</CardDescription>
                   </div>
-                  <CardContent className="p-8 space-y-6">
+                  <CardContent className="p-6 md:p-8 space-y-4 md:space-y-6">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Document Title</label>
                       <Input 
@@ -2327,34 +2338,34 @@ const AdminDashboard = ({
 const Footer = ({ info }: { info: SchoolInfo | null }) => {
   const footer = info?.footer;
   return (
-    <footer className="bg-slate-950 text-white py-32 relative overflow-hidden">
+    <footer className="bg-slate-950 text-white py-20 md:py-32 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
       <div className="max-w-7xl mx-auto px-4 relative z-10">
-        <div className="grid md:grid-cols-4 gap-16 mb-20">
-          <div className="col-span-2">
-            <div className="flex items-center gap-4 mb-10 group cursor-pointer">
-              <div className="bg-primary p-3 rounded-2xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-                <School className="text-white w-8 h-8" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 md:gap-16 mb-16 md:mb-20">
+          <div className="sm:col-span-2">
+            <div className="flex items-center gap-4 mb-8 md:mb-10 group cursor-pointer">
+              <div className="bg-primary p-2.5 sm:p-3 rounded-2xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                <School className="text-white w-6 h-6 sm:w-8 sm:h-8" />
               </div>
               <div className="flex flex-col">
-                <span className="text-3xl font-black tracking-tighter uppercase leading-none">{info?.name || "St. Xavier's"}</span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-primary mt-1">Academy of Excellence</span>
+                <span className="text-2xl sm:text-3xl font-black tracking-tighter uppercase leading-none">{info?.name || "St. Xavier's"}</span>
+                <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-[0.4em] text-primary mt-1">Academy of Excellence</span>
               </div>
             </div>
-            <p className="text-slate-400 max-w-md leading-relaxed text-lg mb-10">
+            <p className="text-slate-400 max-w-md leading-relaxed text-base sm:text-lg mb-8 md:mb-10">
               {footer?.about || "Dedicated to providing a holistic education that empowers students to become lifelong learners and responsible global citizens."}
             </p>
             <div className="flex gap-4">
               {['facebook', 'twitter', 'instagram', 'linkedin'].map((social) => (
-                <button key={social} className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all group">
-                  <div className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
+                <button key={social} className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all group">
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-white transition-colors" />
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <h4 className="font-bold text-xl mb-10 text-white">Quick Links</h4>
-            <ul className="space-y-5 text-slate-400">
+            <h4 className="font-bold text-lg sm:text-xl mb-6 md:mb-10 text-white">Quick Links</h4>
+            <ul className="space-y-4 md:space-y-5 text-slate-400 text-sm sm:text-base">
               {['About Us', 'Admissions', 'Academic Calendar', 'Contact Us', 'Careers'].map((link) => (
                 <li key={link}>
                   <a href="#" className="hover:text-primary transition-all flex items-center gap-3 group">
@@ -2432,7 +2443,7 @@ const LoginView = ({ onTeacherLogin, onAdminLogin }: { onTeacherLogin: (t: Teach
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-32 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-20 md:py-32 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_50%)]" />
       
       <motion.div
@@ -2440,21 +2451,21 @@ const LoginView = ({ onTeacherLogin, onAdminLogin }: { onTeacherLogin: (t: Teach
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md relative z-10"
       >
-        <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/10 overflow-hidden bg-white/80 backdrop-blur-xl">
-          <div className="bg-primary p-12 text-white text-center relative overflow-hidden">
+        <Card className="rounded-[2rem] md:rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/10 overflow-hidden bg-white/80 backdrop-blur-xl">
+          <div className="bg-primary p-8 md:p-12 text-white text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
-            <div className="bg-white/20 w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-6 backdrop-blur-md border border-white/20">
-              <School className="w-10 h-10 text-white" />
+            <div className="bg-white/20 w-16 h-16 md:w-20 h-20 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center mx-auto mb-6 backdrop-blur-md border border-white/20">
+              <School className="w-8 h-8 md:w-10 h-10 text-white" />
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight">School Portal</h2>
-            <p className="text-blue-100/80 mt-2 font-medium">Secure access for faculty and staff</p>
+            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">School Portal</h2>
+            <p className="text-blue-100/80 mt-2 font-medium text-sm md:text-base">Secure access for faculty and staff</p>
           </div>
           
-          <CardContent className="p-10">
-            <Tabs defaultValue="teacher" className="space-y-8">
-              <TabsList className="grid grid-cols-2 bg-slate-100 p-1.5 rounded-2xl h-14">
-                <TabsTrigger value="teacher" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">Teacher</TabsTrigger>
-                <TabsTrigger value="admin" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">Admin</TabsTrigger>
+          <CardContent className="p-6 md:p-10">
+            <Tabs defaultValue="teacher" className="space-y-6 md:space-y-8">
+              <TabsList className="grid grid-cols-2 bg-slate-100 p-1.5 rounded-2xl h-12 md:h-14">
+                <TabsTrigger value="teacher" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all text-sm md:text-base">Teacher</TabsTrigger>
+                <TabsTrigger value="admin" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all text-sm md:text-base">Admin</TabsTrigger>
               </TabsList>
 
               <TabsContent value="teacher">
