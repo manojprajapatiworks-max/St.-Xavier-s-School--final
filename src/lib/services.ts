@@ -22,7 +22,7 @@ import { initializeApp, getApp, FirebaseApp } from 'firebase/app';
 import { db, auth } from '../firebase';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { handleFirestoreError, OperationType } from './firebase-utils';
-import { SchoolInfo, Announcement, Student, ClassWork, SchoolDocument, Teacher, ActionLog, JobPosting } from '../types';
+import { SchoolInfo, Announcement, Student, ClassWork, SchoolDocument, Teacher, ActionLog, JobPosting, HallOfFameEntry } from '../types';
 
 export const logService = {
   async add(log: Omit<ActionLog, 'id' | 'timestamp'>) {
@@ -36,15 +36,20 @@ export const logService = {
     }
   },
   subscribe(callback: (logs: ActionLog[]) => void, filters?: { userId?: string, role?: 'admin' | 'teacher' }) {
-    let q = query(collection(db, 'logs'), orderBy('timestamp', 'desc'));
+    let q;
     if (filters?.userId) {
-      q = query(q, where('userId', '==', filters.userId));
-    }
-    if (filters?.role) {
-      q = query(q, where('userRole', '==', filters.role));
+      q = query(collection(db, 'logs'), where('userId', '==', filters.userId));
+    } else if (filters?.role) {
+      q = query(collection(db, 'logs'), where('userRole', '==', filters.role));
+    } else {
+      q = query(collection(db, 'logs'), orderBy('timestamp', 'desc'));
     }
     return onSnapshot(q, (snap) => {
-      callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as ActionLog)));
+      let logs = snap.docs.map(d => ({ id: d.id, ...d.data() } as ActionLog));
+      if (filters?.userId || filters?.role) {
+        logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      }
+      callback(logs);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'logs');
     });
@@ -270,7 +275,9 @@ export const classWorkService = {
     try {
       await addDoc(collection(db, 'classwork'), {
         ...work,
-        lastEditedBy: editor.name
+        lastEditedBy: editor.name,
+        postedById: editor.id,
+        date: work.date || new Date().toISOString()
       });
       await logService.add({
         userId: editor.id,
@@ -282,6 +289,24 @@ export const classWorkService = {
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'classwork');
+    }
+  },
+  async update(id: string, work: Partial<ClassWork>, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
+    try {
+      await updateDoc(doc(db, 'classwork', id), {
+        ...work,
+        lastEditedBy: editor.name
+      });
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'UPDATE',
+        target: `ClassWork ID: ${id}`,
+        details: `Updated classwork: ${work.topic}`
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `classwork/${id}`);
     }
   },
   async delete(id: string, topic: string, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
@@ -438,6 +463,48 @@ export const teacherService = {
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'teachers');
+    }
+  }
+};
+
+export const hallOfFameService = {
+  subscribe(callback: (entries: HallOfFameEntry[]) => void) {
+    const q = query(collection(db, 'hall_of_fame'), orderBy('uploadedAt', 'desc'));
+    return onSnapshot(q, (snap) => {
+      callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as HallOfFameEntry)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'hall_of_fame');
+    });
+  },
+  async add(entry: Omit<HallOfFameEntry, 'id' | 'uploadedAt'>, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
+    try {
+      const data = { ...entry, uploadedAt: new Date().toISOString() };
+      await addDoc(collection(db, 'hall_of_fame'), data);
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'CREATE',
+        target: `Hall of Fame: ${entry.studentName}`,
+        details: `Added achievement: ${entry.achievementTitle}`
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'hall_of_fame');
+    }
+  },
+  async delete(id: string, name: string, editor: { name: string, role: 'admin' | 'teacher', id: string }) {
+    try {
+      await deleteDoc(doc(db, 'hall_of_fame', id));
+      await logService.add({
+        userId: editor.id,
+        userName: editor.name,
+        userRole: editor.role,
+        action: 'DELETE',
+        target: `Hall of Fame ID: ${id}`,
+        details: `Deleted entry for ${name}`
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `hall_of_fame/${id}`);
     }
   }
 };

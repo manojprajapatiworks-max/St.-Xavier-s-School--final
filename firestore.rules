@@ -117,14 +117,19 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Hall of Fame
+    match /hall_of_fame/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Logs
     match /logs/{id} {
       allow list: if isAdmin() || (
         isAuthenticated() && 
-        'userId' in request.query.filters && 
         (
-          ('email' in request.auth.token && request.query.filters.userId.hasAny([request.auth.token.email.lower()])) ||
-          request.query.filters.userId.hasAny([request.auth.uid])
+          ('email' in request.auth.token && resource.data.userId.lower() == request.auth.token.email.lower()) ||
+          (resource.data.userId == request.auth.uid)
         )
       );
       allow get: if isAdmin() || (

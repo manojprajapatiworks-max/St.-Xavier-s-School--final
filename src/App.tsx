@@ -36,7 +36,12 @@ import {
   Linkedin,
   Megaphone,
   Lock,
-  RefreshCw
+  RefreshCw,
+  Facebook,
+  Twitter,
+  Instagram,
+  Clock,
+  Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from './firebase';
@@ -49,7 +54,8 @@ import {
   documentService,
   teacherService,
   logService,
-  jobService
+  jobService,
+  hallOfFameService
 } from './lib/services';
 import { 
   SchoolInfo, 
@@ -62,7 +68,8 @@ import {
   FacultyMember,
   Facility,
   JobPosting,
-  ActionLog
+  ActionLog,
+  HallOfFameEntry
 } from './types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -128,6 +135,7 @@ const Navbar = ({
     { id: 'announcements', label: 'Announcements', icon: Bell },
     { id: 'documents', label: 'Documents', icon: Download },
     { id: 'careers', label: 'Careers', icon: UserPlus },
+    { id: 'halloffame', label: 'Hall of Fame', icon: Award },
   ];
 
   if (isAdmin) {
@@ -785,6 +793,7 @@ const ParentPortal = () => {
                 <TabsList className="bg-white p-2 rounded-[1.5rem] shadow-2xl shadow-blue-900/5 h-16 inline-flex border border-slate-100 min-w-max">
                   <TabsTrigger value="results" className="rounded-xl px-6 sm:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Exam Results</TabsTrigger>
                   <TabsTrigger value="classwork" className="rounded-xl px-6 sm:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Class Work</TabsTrigger>
+                  <TabsTrigger value="history" className="rounded-xl px-6 sm:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Milestones & Achievements</TabsTrigger>
                   <TabsTrigger value="performance" className="rounded-xl px-6 sm:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Performance Chart</TabsTrigger>
                 </TabsList>
               </div>
@@ -828,26 +837,81 @@ const ParentPortal = () => {
 
               <TabsContent value="classwork">
                 <div className="space-y-4">
-                  {classWork.filter(cw => cw.className === student.class).map((work) => (
-                    <Card key={work.id} className="rounded-2xl border-none shadow-sm">
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-lg text-blue-600">{work.subject}</CardTitle>
-                          <span className="text-xs text-gray-400">{new Date(work.date).toLocaleDateString()}</span>
-                        </div>
-                        <CardDescription className="font-semibold text-gray-900">{work.topic}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-gray-600">{work.description}</p>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {classWork.filter(cw => cw.className === student.class).map((work) => {
+                    const isExpired = work.expiryDate && new Date(work.expiryDate) < new Date();
+                    return (
+                      <Card key={work.id} className="rounded-2xl border-none shadow-sm relative overflow-hidden">
+                        {isExpired && (
+                          <div className="absolute top-0 right-0 bg-red-500 text-white font-bold text-[9px] px-3 py-1 uppercase tracking-wider rounded-bl-xl shadow-sm z-10">
+                            Work Closed
+                          </div>
+                        )}
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-start">
+                            <CardTitle className="text-lg text-blue-600 flex items-center gap-2">
+                              {work.subject}
+                            </CardTitle>
+                            <span className="text-xs text-gray-400 font-bold">Posted: {new Date(work.date).toLocaleDateString()}</span>
+                          </div>
+                          <CardDescription className="font-semibold text-gray-900">{work.topic}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <p className="text-sm text-gray-600 leading-relaxed">{work.description}</p>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-3 border-t border-slate-50">
+                            <span>Posted by: {work.lastEditedBy || 'System'}</span>
+                            {work.expiryDate && (
+                              <span className={isExpired ? 'text-red-500' : 'text-emerald-600'}>
+                                {isExpired ? `Work Closed: ${new Date(work.expiryDate).toLocaleDateString()}` : `Expires: ${new Date(work.expiryDate).toLocaleDateString()}`}
+                              </span>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                   {classWork.filter(cw => cw.className === student.class).length === 0 && (
                     <div className="text-center py-12 text-gray-400 bg-white rounded-3xl border-2 border-dashed border-gray-100">
                       No class work entries for this class yet.
                     </div>
                   )}
                 </div>
+              </TabsContent>
+
+              <TabsContent value="history">
+                <Card className="rounded-3xl border-none shadow-sm overflow-hidden">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="w-5 h-5 text-amber-500" />
+                      Academic History & Achievements
+                    </CardTitle>
+                    <CardDescription>Official verified milestones, awards, and certifications.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-8 space-y-6">
+                    {(!student.academicHistory || student.academicHistory.length === 0) ? (
+                      <div className="text-center py-12 text-gray-400 bg-slate-50/50 rounded-2xl border-2 border-dashed border-gray-100">
+                        No official history or achievements recorded for this session.
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {student.academicHistory.map((rec, idx) => (
+                          <div key={idx} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex gap-4 items-start">
+                            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
+                              <Award className="w-5 h-5" />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black text-primary px-2.5 py-0.5 rounded-full bg-blue-50">{rec.year}</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Class {rec.class}</span>
+                              </div>
+                              <h4 className="font-extrabold text-slate-900 text-sm">{rec.achievement}</h4>
+                              <p className="text-xs text-slate-500 font-medium leading-relaxed">{rec.remarks}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="performance">
@@ -915,6 +979,143 @@ const DocumentsSection = ({ documents }: { documents: SchoolDocument[] }) => {
   );
 };
 
+const HallOfFameSection = ({ entries }: { entries: HallOfFameEntry[] }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterClass, setFilterClass] = useState('');
+
+  const filteredEntries = entries.filter(e => {
+    const matchesSearch = e.studentName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          e.achievementTitle.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesClass = filterClass ? e.class.toLowerCase() === filterClass.toLowerCase() : true;
+    return matchesSearch && matchesClass;
+  });
+
+  return (
+    <div className="py-24 bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Hero Header */}
+        <div className="text-center mb-16 relative">
+          <div className="inline-flex items-center gap-2 text-amber-600 font-bold uppercase tracking-[0.2em] text-xs mb-4">
+            <div className="w-8 h-px bg-amber-500" />
+            <Award className="w-5 h-5 text-amber-500 animate-pulse" />
+            Celebrating Success
+            <div className="w-8 h-px bg-amber-500" />
+          </div>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-none mb-6">
+            Hall of Fame
+          </h1>
+          <p className="text-slate-600 max-w-2xl mx-auto text-base sm:text-lg md:text-xl font-medium leading-relaxed">
+            Honoring our outstanding students who have attained exceptional achievements in academics, sports, cultural activities, and state or national competitions.
+          </p>
+        </div>
+
+        {/* Filter Toolbar */}
+        <div className="flex flex-col md:flex-row gap-4 mb-12 bg-white p-4 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Input 
+              placeholder="Search by student name or achievement..." 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-12 h-12 rounded-2xl border-none bg-slate-50 focus:bg-white transition-all font-medium text-slate-700 placeholder:text-slate-400"
+            />
+          </div>
+          <div className="md:w-48">
+            <Input 
+              placeholder="Filter by Class (e.g. 10-A)" 
+              value={filterClass}
+              onChange={e => setFilterClass(e.target.value)}
+              className="h-12 rounded-2xl border-none bg-slate-50 focus:bg-white transition-all font-bold text-slate-700 placeholder:text-slate-400"
+            />
+          </div>
+        </div>
+
+        {/* Cards Grid */}
+        {filteredEntries.length === 0 ? (
+          <div className="bg-white rounded-[2.5rem] p-20 text-center border-2 border-dashed border-slate-200">
+            <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-100">
+              <Award className="w-10 h-10 text-amber-500" />
+            </div>
+            <h4 className="text-2xl font-bold text-slate-900 mb-2">No entries found</h4>
+            <p className="text-slate-500 max-w-md mx-auto">Try adjusting your search filters or check back later for new inductees.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+            {filteredEntries.map((entry, idx) => (
+              <motion.div
+                key={entry.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className="group relative bg-white rounded-[2.5rem] overflow-hidden shadow-xl shadow-slate-200/60 border border-slate-100/80 hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300"
+              >
+                {/* Visual Banner/Border */}
+                <div className="h-2 w-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500" />
+                
+                <div className="p-8">
+                  {/* Student Image/Avatar */}
+                  <div className="flex items-center gap-5 mb-6">
+                    <div className="relative w-16 h-16 rounded-2xl bg-amber-50 overflow-hidden shrink-0 border-2 border-amber-100 shadow-inner flex items-center justify-center">
+                      {entry.imageUrl ? (
+                        <img src={entry.imageUrl} className="w-full h-full object-cover" alt={entry.studentName} referrerPolicy="no-referrer" />
+                      ) : (
+                        <Award className="w-8 h-8 text-amber-500" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight">{entry.studentName}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 uppercase tracking-wider">Class {entry.class}</span>
+                        {entry.uploadedAt && (
+                          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">{new Date(entry.uploadedAt).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Achievement Header */}
+                  <div className="space-y-3 mb-6">
+                    <Badge className="bg-amber-500 text-white border-none font-bold text-xs hover:bg-amber-600 px-3 py-1 rounded-xl">
+                      {entry.achievementTitle}
+                    </Badge>
+                    <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      {entry.competitionLevel && (
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100">
+                          🏆 {entry.competitionLevel} Level
+                        </span>
+                      )}
+                      {entry.awardRank && (
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-amber-600">
+                          ⭐ {entry.awardRank}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-slate-600 text-sm font-medium leading-relaxed mb-6 line-clamp-4">
+                    {entry.description}
+                  </p>
+
+                  {/* Action Link / Certificate */}
+                  {entry.certificateUrl && (
+                    <a href={entry.certificateUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
+                      <Button variant="outline" className="w-full rounded-2xl border-dashed hover:border-amber-500 hover:text-amber-600 transition-all text-xs font-bold h-11 flex items-center justify-center gap-2">
+                        <FileText className="w-4 h-4" /> View Achievement Document
+                      </Button>
+                    </a>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const ConfirmDialog = ({ 
   isOpen, 
   onClose, 
@@ -959,7 +1160,8 @@ const AdminDashboard = ({
   teachers,
   jobs,
   logs,
-  currentUser
+  currentUser,
+  hallOfFameEntries = []
 }: { 
   info: SchoolInfo | null;
   announcements: Announcement[];
@@ -970,12 +1172,17 @@ const AdminDashboard = ({
   jobs: JobPosting[];
   logs: ActionLog[];
   currentUser: { name: string; role: 'admin' | 'teacher'; id: string; privileges?: Teacher['privileges'] };
+  hallOfFameEntries?: HallOfFameEntry[];
 }) => {
   const [editingInfo, setEditingInfo] = useState<SchoolInfo | null>(info);
   const [newAnn, setNewAnn] = useState({ title: '', content: '', priority: 'medium' as const });
   const [newDoc, setNewDoc] = useState({ title: '', url: '', type: 'profarma' as const });
   const [newStudent, setNewStudent] = useState<Partial<Student>>({ name: '', portalCode: '', class: '', results: [] });
-  const [newWork, setNewWork] = useState({ className: '', subject: '', topic: '', description: '' });
+  const [newWork, setNewWork] = useState({ className: '', subject: '', topic: '', description: '', expiryDate: '' });
+  const [editingWork, setEditingWork] = useState<ClassWork | null>(null);
+  const [historyStudent, setHistoryStudent] = useState<Student | null>(null);
+  const [newHistoryEntry, setNewHistoryEntry] = useState({ year: new Date().getFullYear().toString(), class: '', achievement: '', remarks: '' });
+  const [newHOF, setNewHOF] = useState<Partial<HallOfFameEntry>>({ studentName: '', class: '', achievementTitle: '', description: '', competitionLevel: 'School', awardRank: '', certificateUrl: '', imageUrl: '' });
   const [newTeacher, setNewTeacher] = useState<Partial<Teacher>>({ 
     name: '', 
     email: '', 
@@ -1056,7 +1263,7 @@ const AdminDashboard = ({
 
   const handleAddClassWork = async () => {
     await classWorkService.add({ ...newWork, date: new Date().toISOString() }, currentUser);
-    setNewWork({ className: '', subject: '', topic: '', description: '' });
+    setNewWork({ className: '', subject: '', topic: '', description: '', expiryDate: '' });
     toast.success("Class work added!");
   };
 
@@ -1095,6 +1302,7 @@ const AdminDashboard = ({
               {canManageDocuments && <TabsTrigger value="documents" className="rounded-xl md:rounded-2xl px-6 md:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Documents</TabsTrigger>}
               {canManageCareers && <TabsTrigger value="careers" className="rounded-xl md:rounded-2xl px-6 md:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Careers</TabsTrigger>}
               {canSeeLogbook && <TabsTrigger value="logbook" className="rounded-xl md:rounded-2xl px-6 md:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Logbook</TabsTrigger>}
+              {isAdminRole && <TabsTrigger value="halloffame" className="rounded-xl md:rounded-2xl px-6 md:px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Hall of Fame</TabsTrigger>}
             </TabsList>
           </div>
 
@@ -1882,6 +2090,11 @@ const AdminDashboard = ({
                               <TableCell className="px-8 py-6 text-right">
                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
                                   <Button variant="ghost" size="icon" onClick={() => {
+                                    setHistoryStudent(s);
+                                  }} className="w-9 h-9 rounded-xl text-amber-500 hover:text-amber-600 hover:bg-amber-50" title="Academic History & Achievements">
+                                    <Award className="w-4 h-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" onClick={() => {
                                     setSelectedStudent(s);
                                     setNewStudent(s);
                                   }} className="w-9 h-9 rounded-xl text-slate-400 hover:text-primary hover:bg-blue-50">
@@ -2168,6 +2381,15 @@ const AdminDashboard = ({
                         onChange={e => setNewWork({...newWork, description: e.target.value})}
                       />
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Expiry Date (Optional)</label>
+                      <Input 
+                        type="date" 
+                        value={newWork.expiryDate || ''} 
+                        onChange={e => setNewWork({...newWork, expiryDate: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
                     <Button onClick={handleAddClassWork} className="w-full h-14 bg-primary hover:bg-blue-800 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
                       <Plus className="w-5 h-5 mr-2" /> Post Work
                     </Button>
@@ -2188,36 +2410,72 @@ const AdminDashboard = ({
                       <p className="text-slate-500">Start by posting the first assignment for your students.</p>
                     </div>
                   ) : (
-                    classWork.map(cw => (
-                      <Card key={cw.id} className="rounded-[2rem] border-none shadow-xl shadow-blue-900/5 bg-white overflow-hidden group hover:shadow-2xl transition-all border border-slate-50">
-                        <CardContent className="p-8 flex justify-between items-start gap-6">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="px-3 py-1 rounded-full bg-blue-50 text-primary text-[10px] font-black uppercase tracking-widest">
-                                {cw.className}
+                    classWork.map(cw => {
+                      const canModifyWork = isAdminRole || (currentUser.role === 'teacher' && (cw.postedById === currentUser.id || !cw.postedById));
+                      const isExpired = cw.expiryDate && new Date(cw.expiryDate) < new Date();
+                      
+                      return (
+                        <Card key={cw.id} className="rounded-[2rem] border-none shadow-xl shadow-blue-900/5 bg-white overflow-hidden group hover:shadow-2xl transition-all border border-slate-50">
+                          <CardContent className="p-8 flex justify-between items-start gap-6">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="px-3 py-1 rounded-full bg-blue-50 text-primary text-[10px] font-black uppercase tracking-widest">
+                                  {cw.className}
+                                </div>
+                                <div className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest">
+                                  {cw.subject}
+                                </div>
+                                {isExpired && (
+                                  <div className="px-3 py-1 rounded-full bg-red-100 text-red-600 text-[10px] font-black uppercase tracking-widest">
+                                    Work Closed
+                                  </div>
+                                )}
                               </div>
-                              <div className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest">
-                                {cw.subject}
+                              <h4 className="text-xl font-black text-slate-900 mb-2 group-hover:text-primary transition-colors">{cw.topic}</h4>
+                              <p className="text-slate-500 font-medium leading-relaxed mb-4">{cw.description}</p>
+                              
+                              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-2 border-t border-slate-50">
+                                <span className="flex items-center gap-1.5">
+                                  <User className="w-3.5 h-3.5 text-slate-300" />
+                                  Posted by {cw.lastEditedBy || 'System'}
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                  <Calendar className="w-3.5 h-3.5 text-slate-300" />
+                                  Assigned on: {new Date(cw.date).toLocaleDateString()}
+                                </span>
+                                {cw.expiryDate && (
+                                  <span className={`flex items-center gap-1.5 ${isExpired ? 'text-red-500 font-extrabold' : 'text-emerald-600'}`}>
+                                    <Clock className="w-3.5 h-3.5" />
+                                    {isExpired ? `Work Closed: ${new Date(cw.expiryDate).toLocaleDateString()}` : `Expires: ${new Date(cw.expiryDate).toLocaleDateString()}`}
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            <h4 className="text-xl font-black text-slate-900 mb-2 group-hover:text-primary transition-colors">{cw.topic}</h4>
-                            <p className="text-slate-500 font-medium leading-relaxed line-clamp-2 mb-4">{cw.description}</p>
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                              <User className="w-3 h-3" />
-                              Posted by {cw.lastEditedBy || 'System'}
-                            </div>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => setConfirmDelete({ type: 'classwork', id: cw.id, title: cw.subject })} 
-                            className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))
+                            
+                            {canModifyWork && (
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => setEditingWork(cw)} 
+                                  className="text-slate-300 hover:text-primary hover:bg-blue-50 rounded-xl transition-all"
+                                >
+                                  <Edit className="w-5 h-5" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => setConfirmDelete({ type: 'classwork', id: cw.id, title: cw.subject })} 
+                                  className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                >
+                                  <Trash2 className="w-5 h-5" />
+                                </Button>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -2322,7 +2580,462 @@ const AdminDashboard = ({
               </div>
             </TabsContent>
           )}
+
+          {isAdminRole && (
+            <TabsContent value="halloffame">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
+                <Card className="rounded-[1.5rem] md:rounded-[2.5rem] border-none shadow-2xl shadow-blue-900/5 bg-white overflow-hidden h-fit lg:sticky lg:top-32">
+                  <div className="bg-slate-900 p-6 md:p-8 text-white">
+                    <CardTitle className="text-xl md:text-2xl font-extrabold flex items-center gap-3">
+                      <div className="w-8 h-8 md:w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center">
+                        <Award className="w-4 h-4 md:w-5 h-5 text-white animate-pulse" />
+                      </div>
+                      Induct Student
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 font-medium mt-1 text-xs md:text-sm">Induct a stellar student into the school's Hall of Fame.</CardDescription>
+                  </div>
+                  <CardContent className="p-6 md:p-8 space-y-4 md:space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Student Name</label>
+                      <Input 
+                        placeholder="e.g. Rahul Sharma" 
+                        value={newHOF.studentName || ''} 
+                        onChange={e => setNewHOF({...newHOF, studentName: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Class</label>
+                        <Input 
+                          placeholder="e.g. 12-A" 
+                          value={newHOF.class || ''} 
+                          onChange={e => setNewHOF({...newHOF, class: e.target.value})}
+                          className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Level</label>
+                        <select 
+                          className="w-full h-12 px-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white transition-all text-sm font-bold appearance-none cursor-pointer"
+                          value={newHOF.competitionLevel || 'School'}
+                          onChange={e => setNewHOF({...newHOF, competitionLevel: e.target.value as any})}
+                        >
+                          <option value="School">School</option>
+                          <option value="Zonal">Zonal</option>
+                          <option value="State">State</option>
+                          <option value="National">National</option>
+                          <option value="International">International</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Achievement Title</label>
+                      <Input 
+                        placeholder="e.g. Gold Medalist in National Cyber Olympiad" 
+                        value={newHOF.achievementTitle || ''} 
+                        onChange={e => setNewHOF({...newHOF, achievementTitle: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Description / Citations</label>
+                      <textarea 
+                        className="w-full min-h-[100px] p-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white transition-all text-sm font-medium leading-relaxed" 
+                        placeholder="Tell the school community about Rahul's incredible achievement..."
+                        value={newHOF.description || ''}
+                        onChange={e => setNewHOF({...newHOF, description: e.target.value})}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Student Image URL</label>
+                      <Input 
+                        placeholder="https://example.com/Rahul_photo.jpg" 
+                        value={newHOF.imageUrl || ''} 
+                        onChange={e => setNewHOF({...newHOF, imageUrl: e.target.value})}
+                        className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-medium"
+                      />
+                    </div>
+
+                    <Button 
+                      onClick={async () => {
+                        if (!newHOF.studentName || !newHOF.achievementTitle) {
+                          toast.error("Please fill Name and Achievement Title!");
+                          return;
+                        }
+                        try {
+                          await hallOfFameService.add({
+                            studentName: newHOF.studentName,
+                            class: newHOF.class || 'N/A',
+                            achievementTitle: newHOF.achievementTitle,
+                            description: newHOF.description || '',
+                            competitionLevel: newHOF.competitionLevel || 'School',
+                            awardRank: newHOF.awardRank || '',
+                            certificateUrl: newHOF.certificateUrl || '',
+                            imageUrl: newHOF.imageUrl || 'https://images.unsplash.com/photo-1541339907198-e08756ebafe3?auto=format&fit=crop&q=80&w=600'
+                          }, currentUser);
+                          setNewHOF({ studentName: '', class: '', achievementTitle: '', description: '', competitionLevel: 'School', awardRank: '', certificateUrl: '', imageUrl: '' });
+                          toast.success("Awarded student inducted successfully!");
+                        } catch (err: any) {
+                          toast.error("Failed to induct: " + err.message);
+                        }
+                      }} 
+                      className="w-full h-14 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-95"
+                    >
+                      <Plus className="w-5 h-5 mr-2" /> Induct Student
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="flex items-center justify-between mb-4 px-2">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Hall of Fame Members</h3>
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{hallOfFameEntries.length} Inductees</div>
+                  </div>
+                  
+                  {hallOfFameEntries.length === 0 ? (
+                    <div className="bg-white rounded-[2.5rem] p-20 text-center border-2 border-dashed border-slate-100">
+                      <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Award className="w-10 h-10 text-amber-500 animate-bounce" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900 mb-2">The Hall is Empty</h4>
+                      <p className="text-slate-500">Add outstanding student achievements to display them in the Hall of Fame.</p>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {hallOfFameEntries.map(entry => (
+                        <Card key={entry.id} className="rounded-[2rem] border-none shadow-xl shadow-blue-900/5 bg-white overflow-hidden group hover:shadow-2xl transition-all border border-slate-50 flex flex-col justify-between">
+                          <div className="p-6">
+                            <div className="relative h-48 w-full rounded-2xl overflow-hidden mb-4">
+                              <img 
+                                src={entry.imageUrl || "https://images.unsplash.com/photo-1541339907198-e08756ebafe3?auto=format&fit=crop&q=80&w=600"} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                                alt={entry.studentName}
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-amber-500 text-white text-[9px] font-black uppercase tracking-widest shadow-md">
+                                {entry.competitionLevel}
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <h4 className="font-black text-slate-900 text-lg group-hover:text-amber-500 transition-colors">{entry.studentName}</h4>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Class: {entry.class}</p>
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={async () => {
+                                  if (confirm(`Are you sure you want to remove ${entry.studentName} from the Hall of Fame?`)) {
+                                    await hallOfFameService.delete(entry.id, entry.studentName, currentUser);
+                                    toast.success("Inductee removed successfully");
+                                  }
+                                }} 
+                                className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </Button>
+                            </div>
+                            
+                            <h5 className="font-extrabold text-amber-600 text-sm mb-2">{entry.achievementTitle}</h5>
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-3">{entry.description}</p>
+                          </div>
+                          
+                          <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            <span>Inducted Member</span>
+                            <span>{new Date(entry.uploadedAt).toLocaleDateString()}</span>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
+
+        {/* Edit Classwork Modal */}
+        {editingWork && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-[2rem] p-8 max-w-lg w-full shadow-2xl relative"
+            >
+              <button 
+                onClick={() => setEditingWork(null)}
+                className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-2 rounded-full transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <Edit className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Edit Assignment</h3>
+                  <p className="text-slate-400 font-medium text-xs">Update class assignment details and expiry date.</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Class</label>
+                    <Input 
+                      value={editingWork.className} 
+                      onChange={e => setEditingWork({...editingWork, className: e.target.value})}
+                      className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Subject</label>
+                    <Input 
+                      value={editingWork.subject} 
+                      onChange={e => setEditingWork({...editingWork, subject: e.target.value})}
+                      className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Topic / Title</label>
+                  <Input 
+                    value={editingWork.topic} 
+                    onChange={e => setEditingWork({...editingWork, topic: e.target.value})}
+                    className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Instructions</label>
+                  <textarea 
+                    className="w-full min-h-[120px] p-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white transition-all text-sm font-medium leading-relaxed" 
+                    value={editingWork.description}
+                    onChange={e => setEditingWork({...editingWork, description: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Expiry Date (Optional)</label>
+                  <Input 
+                    type="date" 
+                    value={editingWork.expiryDate || ''} 
+                    onChange={e => setEditingWork({...editingWork, expiryDate: e.target.value})}
+                    className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 mt-8">
+                <Button variant="outline" onClick={() => setEditingWork(null)} className="flex-1 rounded-xl h-12">Cancel</Button>
+                <Button 
+                  onClick={async () => {
+                    await classWorkService.update(editingWork.id, {
+                      className: editingWork.className,
+                      subject: editingWork.subject,
+                      topic: editingWork.topic,
+                      description: editingWork.description,
+                      expiryDate: editingWork.expiryDate || null
+                    }, currentUser);
+                    setEditingWork(null);
+                    toast.success("Assignment updated!");
+                  }} 
+                  className="flex-1 bg-primary hover:bg-blue-800 rounded-xl h-12 text-white font-bold"
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Academic History & Achievements Modal */}
+        {historyStudent && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-[2.5rem] p-8 max-w-3xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            >
+              <button 
+                onClick={() => setHistoryStudent(null)}
+                className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-2 rounded-full transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center">
+                    <Award className="w-6 h-6 text-amber-500 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Academic History & Achievements</h3>
+                    <p className="text-slate-400 font-semibold text-xs mt-0.5">Records for student: <span className="text-primary font-bold">{historyStudent.name}</span></p>
+                  </div>
+                </div>
+                
+                {isAdminRole && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="rounded-xl border-dashed hover:border-primary hover:text-primary transition-all font-bold"
+                    onClick={() => {
+                      const headers = ['Year', 'Class', 'Achievement', 'Remarks'];
+                      const rows = (historyStudent.academicHistory || []).map(h => [
+                        h.year,
+                        h.class,
+                        h.achievement,
+                        h.remarks
+                      ]);
+                      const csvContent = [
+                        ['Student Name', historyStudent.name],
+                        ['Portal Code', historyStudent.portalCode],
+                        ['Class', historyStudent.class],
+                        [],
+                        headers,
+                        ...rows
+                      ].map(r => r.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+                      
+                      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                      const link = document.createElement('a');
+                      link.href = URL.createObjectURL(blob);
+                      link.setAttribute('download', `${historyStudent.name.replace(/\s+/g, '_')}_Academic_History.csv`);
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      toast.success("CSV file downloaded!");
+                    }}
+                  >
+                    <Download className="w-4 h-4 mr-2" /> Export (CSV)
+                  </Button>
+                )}
+              </div>
+
+              {/* Existing History List */}
+              <div className="space-y-4 mb-8">
+                <h4 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-2">Milestone History</h4>
+                {(!historyStudent.academicHistory || historyStudent.academicHistory.length === 0) ? (
+                  <div className="text-center py-8 text-gray-400 bg-slate-50 rounded-2xl border-2 border-dashed border-gray-100">
+                    No academic history records found. Add the first achievement below.
+                  </div>
+                ) : (
+                  <div className="grid gap-4 max-h-[250px] overflow-y-auto pr-2 no-scrollbar">
+                    {historyStudent.academicHistory.map((rec, i) => (
+                      <div key={i} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex justify-between items-start gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-primary px-2 py-0.5 rounded-full bg-blue-50">{rec.year}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Class {rec.class}</span>
+                          </div>
+                          <h5 className="font-bold text-slate-900 text-sm">{rec.achievement}</h5>
+                          <p className="text-xs text-slate-500 font-medium leading-relaxed">{rec.remarks}</p>
+                        </div>
+                        {canManageStudentsFull && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl w-8 h-8 shrink-0"
+                            onClick={async () => {
+                              const updatedHistory = (historyStudent.academicHistory || []).filter((_, idx) => idx !== i);
+                              const updatedStudent = { ...historyStudent, academicHistory: updatedHistory };
+                              await studentService.upsert(updatedStudent, currentUser);
+                              setHistoryStudent(updatedStudent);
+                              toast.success("Milestone deleted successfully");
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Add Achievement Form */}
+              {canManageStudentsFull && (
+                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-4">
+                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-900">Add Academic Milestone / Achievement</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Academic Year</label>
+                      <Input 
+                        placeholder="e.g. 2025" 
+                        value={newHistoryEntry.year} 
+                        onChange={e => setNewHistoryEntry({...newHistoryEntry, year: e.target.value})}
+                        className="h-11 rounded-xl border-slate-200 bg-white font-bold"
+                      />
+                    </div>
+                    <div className="col-span-2 space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Class / Grade</label>
+                      <Input 
+                        placeholder="e.g. 9-A (Default: current)" 
+                        value={newHistoryEntry.class} 
+                        onChange={e => setNewHistoryEntry({...newHistoryEntry, class: e.target.value})}
+                        className="h-11 rounded-xl border-slate-200 bg-white font-bold"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Achievement / Title</label>
+                    <Input 
+                      placeholder="e.g. First place in Inter-School Science Exhibition" 
+                      value={newHistoryEntry.achievement} 
+                      onChange={e => setNewHistoryEntry({...newHistoryEntry, achievement: e.target.value})}
+                      className="h-11 rounded-xl border-slate-200 bg-white font-bold"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Remarks / Counselor Notes</label>
+                    <textarea 
+                      className="w-full min-h-[80px] p-4 rounded-xl border border-slate-200 bg-white text-xs font-medium leading-relaxed" 
+                      placeholder="Superb execution and team presentation..."
+                      value={newHistoryEntry.remarks}
+                      onChange={e => setNewHistoryEntry({...newHistoryEntry, remarks: e.target.value})}
+                    />
+                  </div>
+
+                  <Button 
+                    onClick={async () => {
+                      if (!newHistoryEntry.year || !newHistoryEntry.achievement) {
+                        toast.error("Year and Achievement fields are required");
+                        return;
+                      }
+                      const entryClass = newHistoryEntry.class || historyStudent.class;
+                      const milestone = {
+                        year: newHistoryEntry.year,
+                        class: entryClass,
+                        achievement: newHistoryEntry.achievement,
+                        remarks: newHistoryEntry.remarks || 'No remarks recorded'
+                      };
+                      const updatedHistory = [...(historyStudent.academicHistory || []), milestone];
+                      const updatedStudent = { ...historyStudent, academicHistory: updatedHistory };
+                      
+                      await studentService.upsert(updatedStudent, currentUser);
+                      setHistoryStudent(updatedStudent);
+                      setNewHistoryEntry({ year: new Date().getFullYear().toString(), class: '', achievement: '', remarks: '' });
+                      toast.success("Milestone added successfully!");
+                    }}
+                    className="w-full h-11 bg-primary hover:bg-blue-800 rounded-xl font-bold text-sm text-white"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Save Milestone
+                  </Button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
         <ConfirmDialog 
           isOpen={!!confirmDelete}
           onClose={() => setConfirmDelete(null)}
@@ -2356,11 +3069,19 @@ const Footer = ({ info }: { info: SchoolInfo | null }) => {
               {footer?.about || "Dedicated to providing a holistic education that empowers students to become lifelong learners and responsible global citizens."}
             </p>
             <div className="flex gap-4">
-              {['facebook', 'twitter', 'instagram', 'linkedin'].map((social) => (
-                <button key={social} className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all group">
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-white transition-colors" />
-                </button>
-              ))}
+              {[
+                { name: 'facebook', icon: Facebook },
+                { name: 'twitter', icon: Twitter },
+                { name: 'instagram', icon: Instagram },
+                { name: 'linkedin', icon: Linkedin }
+              ].map((social) => {
+                const IconComponent = social.icon;
+                return (
+                  <button key={social.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all group" title={social.name}>
+                    <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-white transition-colors" />
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div>
@@ -2566,6 +3287,7 @@ export default function App() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [logs, setLogs] = useState<ActionLog[]>([]);
+  const [hallOfFameEntries, setHallOfFameEntries] = useState<HallOfFameEntry[]>([]);
   const [isTeacher, setIsTeacher] = useState(false);
 
   useEffect(() => {
@@ -2625,6 +3347,7 @@ export default function App() {
     const unsubDocs = documentService.subscribe(setDocuments);
     const unsubWork = classWorkService.subscribe(setClassWork);
     const unsubJobs = jobService.subscribe(setJobs);
+    const unsubHOF = hallOfFameService.subscribe(setHallOfFameEntries);
     
     let unsubTeachers: (() => void) | undefined;
     let unsubLogs: (() => void) | undefined;
@@ -2645,6 +3368,7 @@ export default function App() {
       unsubDocs();
       unsubWork();
       unsubJobs();
+      unsubHOF();
       if (unsubTeachers) unsubTeachers();
       if (unsubLogs) unsubLogs();
     };
@@ -2724,6 +3448,7 @@ export default function App() {
                 jobs={jobs}
                 logs={logs}
                 currentUser={isAdmin ? { name: 'Admin', role: 'admin', id: user?.email?.toLowerCase() || 'admin' } : { name: teacherUser?.name || 'Teacher', role: 'teacher', id: teacherUser?.id || 'teacher', privileges: teacherUser?.privileges }}
+                hallOfFameEntries={hallOfFameEntries}
               />
             </motion.div>
           )}
@@ -2793,6 +3518,17 @@ export default function App() {
               exit={{ opacity: 0 }}
             >
               <CareersSection jobs={jobs} />
+            </motion.div>
+          )}
+
+          {activeTab === 'halloffame' && (
+            <motion.div
+              key="halloffame"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <HallOfFameSection entries={hallOfFameEntries} />
             </motion.div>
           )}
 

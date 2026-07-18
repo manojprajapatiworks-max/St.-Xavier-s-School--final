@@ -39,6 +39,13 @@ export interface Announcement {
   priority: 'low' | 'medium' | 'high';
 }
 
+export interface AcademicRecord {
+  year: string;
+  class: string;
+  achievement: string;
+  remarks: string;
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -51,6 +58,7 @@ export interface Student {
   attendance: number;
   lastEditedBy?: string;
   lastEditedAt?: string;
+  academicHistory?: AcademicRecord[];
 }
 
 export interface Teacher {
@@ -81,6 +89,21 @@ export interface ClassWork {
   description: string;
   date: string;
   lastEditedBy?: string;
+  postedById?: string;
+  expiryDate?: string;
+}
+
+export interface HallOfFameEntry {
+  id: string;
+  studentName: string;
+  imageUrl?: string;
+  class: string;
+  achievementTitle: string;
+  description: string;
+  competitionLevel?: string;
+  awardRank?: string;
+  certificateUrl?: string;
+  uploadedAt: string;
 }
 
 export interface SchoolDocument {
